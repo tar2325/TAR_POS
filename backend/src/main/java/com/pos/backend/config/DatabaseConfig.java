@@ -15,6 +15,7 @@ import java.net.URI;
 /**
  * Automatically parses cloud database connection strings (e.g. Render, Railway, Supabase)
  * which frequently provide URLs in 'postgres://' or 'postgresql://' format instead of JDBC.
+ * Also configures conservative HikariCP pool parameters for 512MB RAM cloud free tiers.
  */
 @Configuration
 @Slf4j
@@ -34,6 +35,13 @@ public class DatabaseConfig {
     @ConditionalOnProperty(name = "spring.datasource.url")
     public DataSource dataSource() {
         HikariConfig config = new HikariConfig();
+        
+        // Conservative pool sizing for 512MB RAM cloud environments
+        config.setMaximumPoolSize(4);
+        config.setMinimumIdle(1);
+        config.setConnectionTimeout(30000);
+        config.setInitializationFailTimeout(60000);
+        config.setLeakDetectionThreshold(20000);
 
         if (rawUrl != null && !rawUrl.isBlank()) {
             String trimmedUrl = rawUrl.trim();
@@ -45,7 +53,14 @@ public class DatabaseConfig {
                     String host = uri.getHost();
                     int port = uri.getPort() == -1 ? 5432 : uri.getPort();
                     String path = uri.getPath();
+                    String query = uri.getQuery();
+                    
                     String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path;
+                    if (query != null && !query.isBlank()) {
+                        jdbcUrl += "?" + query;
+                    } else {
+                        jdbcUrl += "?sslmode=prefer";
+                    }
 
                     config.setJdbcUrl(jdbcUrl);
 
@@ -60,7 +75,7 @@ public class DatabaseConfig {
                     }
 
                     config.setDriverClassName("org.postgresql.Driver");
-                    log.info("Initialized Cloud DataSource: {}", jdbcUrl);
+                    log.info("Initialized Cloud DataSource with JDBC URL: {}", jdbcUrl);
                     return new HikariDataSource(config);
                 } catch (Exception e) {
                     log.warn("Could not parse cloud URL as URI ({}), falling back to direct string", trimmedUrl, e);
