@@ -55,7 +55,7 @@ class StockServiceTest {
     @DisplayName("Should throw BusinessException when delta is zero")
     void shouldThrowWhenDeltaZero() {
         BusinessException ex = assertThrows(BusinessException.class, () ->
-                stockService.apply(10L, 0, StockMovementType.MANUAL_ADD, "Zero test", "tester")
+                stockService.apply(10L, 0, StockMovementType.ADJUST, "Zero test", "tester")
         );
         assertEquals("จำนวนต้องไม่เป็นศูนย์", ex.getMessage());
         verifyNoInteractions(productRepository, movementRepository);
@@ -67,7 +67,7 @@ class StockServiceTest {
         when(productRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () ->
-                stockService.apply(999L, 5, StockMovementType.MANUAL_ADD, "Test", "tester")
+                stockService.apply(999L, 5, StockMovementType.ADJUST, "Test", "tester")
         );
         verify(movementRepository, never()).save(any());
     }
@@ -108,13 +108,13 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully increase stock on RESTOCK")
-    void shouldSuccessfullyIncreaseStockOnRestock() {
+    @DisplayName("Should successfully increase stock on RECEIVE")
+    void shouldSuccessfullyIncreaseStockOnReceive() {
         when(productRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(mockProduct));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(movementRepository.save(any(StockMovement.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        StockMovement result = stockService.apply(10L, 50, StockMovementType.RESTOCK, "เติมของ", "manager1");
+        StockMovement result = stockService.apply(10L, 50, StockMovementType.RECEIVE, "เติมของ", "manager1");
 
         assertNotNull(result);
         assertEquals(70, mockProduct.getStock());

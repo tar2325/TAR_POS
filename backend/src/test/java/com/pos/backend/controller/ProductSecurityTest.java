@@ -61,6 +61,7 @@ class ProductSecurityTest {
                 null,
                 10,
                 5,
+                true,
                 null
         );
 
