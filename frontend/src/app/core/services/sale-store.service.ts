@@ -4,6 +4,7 @@ import { ReceiptData } from '../../models/receipt.model';
 import { ProductStoreService } from './product-store.service';
 import { CategoryStoreService } from './category-store.service';
 import { getMockSales } from '../data/mock-sales.data';
+import { environment } from '../../../environments/environment';
 
 const STORAGE_KEY = 'pos_sales_history';
 
@@ -223,18 +224,20 @@ export class SaleStoreService {
 
   private loadOrders(): SaleOrder[] {
     if (typeof window === 'undefined') {
-      return getMockSales();
+      return environment.production ? [] : getMockSales();
     }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const initial = getMockSales();
-      this.persistOrders(initial);
+      const initial = environment.production ? [] : getMockSales();
+      if (!environment.production && initial.length > 0) {
+        this.persistOrders(initial);
+      }
       return initial;
     }
     try {
       return JSON.parse(raw);
     } catch {
-      return getMockSales();
+      return environment.production ? [] : getMockSales();
     }
   }
 
@@ -248,7 +251,7 @@ export class SaleStoreService {
   }
 
   resetData(): void {
-    const initial = getMockSales();
+    const initial = environment.production ? [] : getMockSales();
     this.orders.set(initial);
     this.persistOrders(initial);
   }

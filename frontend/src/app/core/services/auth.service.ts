@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { delay, map, Observable, of, throwError } from 'rxjs';
+import { delay, map, Observable, of, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthSession, LoginRequest, LoginResponse } from '../../models/auth.model';
 import { User, UserRole } from '../../models/user.model';
@@ -21,12 +21,20 @@ export class AuthService {
     if (!environment.production) {
       return this.mockLogin(request);
     }
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, request);
+    return this.http
+      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, request)
+      .pipe(
+        tap((response) => {
+          this.persistSession(response);
+        }),
+      );
   }
 
   logout(): void {
     this.session.set(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
     this.router.navigate(['/login']);
   }
 
@@ -71,10 +79,15 @@ export class AuthService {
       user: response.user,
     };
     this.session.set(session);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+    }
   }
 
   private readStoredSession(): AuthSession | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) {
       return null;

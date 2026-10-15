@@ -31,6 +31,12 @@ export class LoginComponent {
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
 
+  constructor() {
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+
   protected readonly form = this.fb.nonNullable.group({
     username: ['', Validators.required],
     password: ['', Validators.required],

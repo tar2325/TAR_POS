@@ -106,3 +106,42 @@ project _pos/
      - `APP_JWT_SECRET`: *(กำหนดรหัสผ่านสุ่ม >= 32 ตัวอักษร)*
      - *(หรือตั้งค่า `ALLOW_IN_MEMORY_DB=true` หากต้องการทดสอบระบบแบบ Demo โดยยังไม่ต่อ Postgres)*
 
+---
+
+## 🧪 การรันชุดทดสอบอัตโนมัติ (Automated Local Tests)
+
+โปรเจกต์มีชุดทดสอบครอบคลุมทั้ง Backend (JUnit 5 / Spring Boot Test / MockMvc) และ Frontend (Angular 22 / Vitest):
+
+### รันการทดสอบทั้งหมดในคำสั่งเดียว (PowerShell)
+```powershell
+.\scripts\test-local.ps1
+```
+*(หรือเลือกข้าม: `.\scripts\test-local.ps1 -SkipFrontend` หรือ `.\scripts\test-local.ps1 -SkipBackend`)*
+
+### รันเฉพาะ Backend Tests
+```powershell
+cd backend
+.\mvnw.cmd test -Dspring.profiles.active=test
+```
+ครอบคลุม:
+- `JwtServiceTest`: ตรวจสอบการ Issue / Validate JWT Token และขนาด Secret Key
+- `DatabaseConfigTest`: ตรวจสอบ URL Parser, H2 Fallback, และ Driver Auto-Selection
+- `StockServiceTest`: ตรวจสอบตรรกะการตัดสต็อก, Ledger movement, และ Oversell prevention
+- `AuthControllerTest`: ตรวจสอบการ Login, Validation, และ Authentication Filter
+- `ProductSecurityTest`: ตรวจสอบ Role-based Access Control (401 สำหรับผู้ไม่ได้ล็อกอิน และ 403 สำหรับ Cashier แก้ไขสินค้า)
+
+### รันเฉพาะ Frontend Tests
+```powershell
+cd frontend
+npm test -- --watch=false
+```
+ครอบคลุม:
+- `app.spec.ts`: ตรวจสอบการเรนเดอร์ Root Component และ Router Outlet
+- `auth.service.spec.ts`: ตรวจสอบการเข้าสู่ระบบ, การเก็บ Token ใน `localStorage`, และ Signal state
+- `auth.guard.spec.ts`: ตรวจสอบการ Route Guard ป้องกันหน้า Dashboard และ Admin-only routes
+- `cart.service.spec.ts`: ตรวจสอบระบบตะกร้าสินค้า, การเช็คสต็อกก่อนเพิ่มสินค้า, คำนวณยอดเงิน
+- `product-store.service.spec.ts`: ตรวจสอบ Product CRUD, Barcode Generator, การตัด/เติมสต็อก
+- `sale-store.service.spec.ts`: ตรวจสอบการบันทึกบิลขาย, Snapshot ต้นทุน, คำนวณกำไร, และสรุปยอดตามช่วงเวลา
+- `sales-report.component.spec.ts`: ตรวจสอบการเปลี่ยนแท็บช่วงเวลา, ฟิลเตอร์ค้นหา, และฟังก์ชัน Export CSV
+
+

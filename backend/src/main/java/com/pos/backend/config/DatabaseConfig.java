@@ -24,6 +24,8 @@ import java.sql.Connection;
 @Slf4j
 public class DatabaseConfig {
 
+    public record JdbcSettings(String jdbcUrl, String username, String password, String driverClassName) {}
+
     @Value("${spring.datasource.url:${INTERNAL_DATABASE_URL:${DATABASE_URL:${POSTGRES_URL:}}}}")
     private String rawUrl;
 
@@ -62,7 +64,30 @@ public class DatabaseConfig {
         config.setInitializationFailTimeout(60000);
         config.setLeakDetectionThreshold(20000);
 
-        String trimmedUrl = effectiveUrl.trim();
+        JdbcSettings settings = toJdbcSettings(effectiveUrl, defaultUsername, defaultPassword);
+        config.setJdbcUrl(settings.jdbcUrl());
+        if (settings.username() != null && !settings.username().isBlank()) {
+            config.setUsername(settings.username());
+        }
+        if (settings.password() != null && !settings.password().isBlank()) {
+            config.setPassword(settings.password());
+        }
+        config.setDriverClassName(settings.driverClassName());
+
+        log.info("Initialized DataSource [{}] with JDBC URL: {}", settings.driverClassName(), settings.jdbcUrl());
+        return new HikariDataSource(config);
+    }
+
+    /**
+     * Converts raw connection string into standardized JDBC settings with appropriate driver.
+     * Package-private for unit testing.
+     */
+    static JdbcSettings toJdbcSettings(String rawUrl, String defaultUser, String defaultPass) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return new JdbcSettings("", defaultUser, defaultPass, "org.postgresql.Driver");
+        }
+
+        String trimmedUrl = rawUrl.trim();
 
         // If URL is in standard cloud postgres:// or postgresql:// format without jdbc: prefix
         if (trimmedUrl.startsWith("postgres://") || trimmedUrl.startsWith("postgresql://")) {
@@ -81,33 +106,31 @@ public class DatabaseConfig {
                     jdbcUrl += "?sslmode=prefer";
                 }
 
-                config.setJdbcUrl(jdbcUrl);
+                String username = defaultUser;
+                String password = defaultPass;
 
                 String userInfo = uri.getUserInfo();
                 if (userInfo != null && userInfo.contains(":")) {
                     String[] parts = userInfo.split(":", 2);
-                    config.setUsername(parts[0]);
-                    config.setPassword(parts[1]);
-                } else if (defaultUsername != null && !defaultUsername.isBlank()) {
-                    config.setUsername(defaultUsername);
-                    config.setPassword(defaultPassword);
+                    username = parts[0];
+                    password = parts[1];
                 }
 
-                config.setDriverClassName("org.postgresql.Driver");
-                log.info("Initialized Cloud PostgreSQL DataSource with JDBC URL: {}", jdbcUrl);
-                return new HikariDataSource(config);
+                return new JdbcSettings(jdbcUrl, username, password, "org.postgresql.Driver");
             } catch (Exception e) {
                 log.warn("Could not parse cloud URL as URI ({}), falling back to direct string", trimmedUrl, e);
             }
         }
 
-        config.setJdbcUrl(trimmedUrl);
-        if (defaultUsername != null && !defaultUsername.isBlank()) {
-            config.setUsername(defaultUsername);
-            config.setPassword(defaultPassword);
+        // Determine driver based on JDBC prefix
+        String driver = "org.postgresql.Driver";
+        if (trimmedUrl.startsWith("jdbc:h2:")) {
+            driver = "org.h2.Driver";
+        } else if (trimmedUrl.startsWith("jdbc:mysql:")) {
+            driver = "com.mysql.cj.jdbc.Driver";
         }
-        config.setDriverClassName("org.postgresql.Driver");
-        return new HikariDataSource(config);
+
+        return new JdbcSettings(trimmedUrl, defaultUser, defaultPass, driver);
     }
 
     /**

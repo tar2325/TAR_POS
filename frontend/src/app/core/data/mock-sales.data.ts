@@ -1,4 +1,6 @@
-import { SaleOrder } from '../../models/sale.model';
+import { SaleItem, SaleOrder } from '../../models/sale.model';
+import { Product } from '../../models/product.model';
+import { MOCK_PRODUCTS } from './product-mock.data';
 
 function createDate(daysAgo: number, hours: number, minutes: number): string {
   const d = new Date();
@@ -7,477 +9,165 @@ function createDate(daysAgo: number, hours: number, minutes: number): string {
   return d.toISOString();
 }
 
+const prodMap = new Map<number, Product>(MOCK_PRODUCTS.map((p) => [p.id, p]));
+
+function makeItem(productId: number, quantity: number, categoryName: string): SaleItem {
+  const product = prodMap.get(productId)!;
+  const cost = product.costPrice ?? 0;
+  const lineCost = Math.round(cost * quantity * 100) / 100;
+  const lineTotal = Math.round(product.price * quantity * 100) / 100;
+  const lineProfit = Math.round((lineTotal - lineCost) * 100) / 100;
+  const marginPercent = lineTotal > 0 ? Math.round((lineProfit / lineTotal) * 10000) / 100 : 0;
+  return {
+    productId: product.id,
+    productName: product.name,
+    sku: product.sku,
+    barcode: product.barcode,
+    categoryName,
+    quantity,
+    costPrice: cost,
+    price: product.price,
+    lineCost,
+    lineTotal,
+    lineProfit,
+    marginPercent,
+  };
+}
+
+function makeOrder(
+  id: string,
+  receiptNo: string,
+  createdAt: string,
+  cashierName: string,
+  items: SaleItem[],
+  discount = 0,
+): SaleOrder {
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = Math.round(items.reduce((sum, item) => sum + item.lineTotal, 0) * 100) / 100;
+  const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
+  const totalCost = Math.round(items.reduce((sum, item) => sum + item.lineCost, 0) * 100) / 100;
+  const grossProfit = Math.round((total - totalCost) * 100) / 100;
+  const profitMarginPercent = total > 0 ? Math.round((grossProfit / total) * 10000) / 100 : 0;
+
+  return {
+    id,
+    receiptNo,
+    createdAt,
+    cashierName,
+    items,
+    itemCount,
+    subtotal,
+    discount,
+    tax: 0,
+    total,
+    totalCost,
+    grossProfit,
+    profitMarginPercent,
+  };
+}
+
 export function getMockSales(): SaleOrder[] {
   return [
     // Today
-    {
-      id: 'RCP-TD001',
-      receiptNo: 'RCP-10023401',
-      createdAt: createDate(0, 9, 15),
-      cashierName: 'สมชาย ใจดี',
-      itemCount: 4,
-      subtotal: 100,
-      discount: 0,
-      tax: 0,
-      total: 100,
-      totalCost: 62,
-      grossProfit: 38,
-      profitMarginPercent: 38,
-      items: [
-        {
-          productId: 1,
-          productName: 'น้ำดื่ม 600ml',
-          sku: 'P001',
-          barcode: '8851234567890',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 2,
-          costPrice: 6,
-          price: 10,
-          lineCost: 12,
-          lineTotal: 20,
-          lineProfit: 8,
-          marginPercent: 40,
-        },
-        {
-          productId: 2,
-          productName: 'ขนมปังไส้ครีม',
-          sku: 'P002',
-          barcode: '8851234567891',
-          categoryName: 'เบเกอรี่',
-          quantity: 2,
-          costPrice: 16,
-          price: 25,
-          lineCost: 32,
-          lineTotal: 50,
-          lineProfit: 18,
-          marginPercent: 36,
-        },
-        {
-          productId: 4,
-          productName: 'มาม่าต้มยำ',
-          sku: 'P004',
-          barcode: '8851234567893',
-          categoryName: 'บะหมี่กึ่งสำเร็จรูป',
-          quantity: 2,
-          costPrice: 9,
-          price: 15,
-          lineCost: 18,
-          lineTotal: 30,
-          lineProfit: 12,
-          marginPercent: 40,
-        },
+    makeOrder(
+      'RCP-TD001',
+      'RCP-10023401',
+      createDate(0, 9, 15),
+      'สมชาย ใจดี',
+      [
+        makeItem(1, 2, 'เครื่องดื่ม'), // น้ำดื่ม
+        makeItem(2, 2, 'เบเกอรี่'),    // ขนมปัง
+        makeItem(4, 2, 'อาหารแห้ง'),   // มาม่า
       ],
-    },
-    {
-      id: 'RCP-TD002',
-      receiptNo: 'RCP-10023402',
-      createdAt: createDate(0, 11, 30),
-      cashierName: 'สมชาย ใจดี',
-      itemCount: 3,
-      subtotal: 185,
-      discount: 0,
-      tax: 0,
-      total: 185,
-      totalCost: 112,
-      grossProfit: 73,
-      profitMarginPercent: 39.46,
-      items: [
-        {
-          productId: 3,
-          productName: 'กาแฟสำเร็จรูป',
-          sku: 'P003',
-          barcode: '8851234567892',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 3,
-          costPrice: 22,
-          price: 35,
-          lineCost: 66,
-          lineTotal: 105,
-          lineProfit: 39,
-          marginPercent: 37.14,
-        },
-        {
-          productId: 5,
-          productName: 'ช็อกโกแลตบาร์',
-          sku: 'P005',
-          barcode: '8851234567894',
-          categoryName: 'ขนมขบเคี้ยว',
-          quantity: 2,
-          costPrice: 23,
-          price: 40,
-          lineCost: 46,
-          lineTotal: 80,
-          lineProfit: 34,
-          marginPercent: 42.5,
-        },
+    ),
+    makeOrder(
+      'RCP-TD002',
+      'RCP-10023402',
+      createDate(0, 11, 30),
+      'สมชาย ใจดี',
+      [
+        makeItem(3, 3, 'เครื่องดื่ม'), // กาแฟ
+        makeItem(10, 2, 'ขนม'),        // ช็อกโกแลต
       ],
-    },
-    {
-      id: 'RCP-TD003',
-      receiptNo: 'RCP-10023403',
-      createdAt: createDate(0, 13, 45),
-      cashierName: 'วิภาดา รักบริการ',
-      itemCount: 6,
-      subtotal: 290,
-      discount: 10,
-      tax: 0,
-      total: 280,
-      totalCost: 174,
-      grossProfit: 106,
-      profitMarginPercent: 37.86,
-      items: [
-        {
-          productId: 6,
-          productName: 'น้ำอัดลมกระป๋อง',
-          sku: 'P006',
-          barcode: '8851234567895',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 4,
-          costPrice: 11,
-          price: 18,
-          lineCost: 44,
-          lineTotal: 72,
-          lineProfit: 28,
-          marginPercent: 38.89,
-        },
-        {
-          productId: 7,
-          productName: 'สบู่ก้อน',
-          sku: 'P007',
-          barcode: '8851234567896',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 2,
-          costPrice: 13,
-          price: 22,
-          lineCost: 26,
-          lineTotal: 44,
-          lineProfit: 18,
-          marginPercent: 40.91,
-        },
-        {
-          productId: 8,
-          productName: 'ยาสระผม',
-          sku: 'P008',
-          barcode: '8851234567897',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 2,
-          costPrice: 52,
-          price: 85,
-          lineCost: 104,
-          lineTotal: 170,
-          lineProfit: 66,
-          marginPercent: 38.82,
-        },
+    ),
+    makeOrder(
+      'RCP-TD003',
+      'RCP-10023403',
+      createDate(0, 13, 45),
+      'วิภาดา รักบริการ',
+      [
+        makeItem(6, 4, 'เครื่องดื่ม'), // โค้ก
+        makeItem(5, 1, 'ของสด'),       // ไข่ไก่
+        makeItem(8, 1, 'อาหารแห้ง'),   // ข้าวสาร
       ],
-    },
-    {
-      id: 'RCP-TD004',
-      receiptNo: 'RCP-10023404',
-      createdAt: createDate(0, 16, 20),
-      cashierName: 'วิภาดา รักบริการ',
-      itemCount: 5,
-      subtotal: 310,
-      discount: 0,
-      tax: 0,
-      total: 310,
-      totalCost: 191,
-      grossProfit: 119,
-      profitMarginPercent: 38.39,
-      items: [
-        {
-          productId: 9,
-          productName: 'ผงซักฟอก 500g',
-          sku: 'P009',
-          barcode: '8851234567898',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 2,
-          costPrice: 32,
-          price: 52,
-          lineCost: 64,
-          lineTotal: 104,
-          lineProfit: 40,
-          marginPercent: 38.46,
-        },
-        {
-          productId: 10,
-          productName: 'น้ำยาล้างจาน',
-          sku: 'P010',
-          barcode: '8851234567899',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 3,
-          costPrice: 20,
-          price: 32,
-          lineCost: 60,
-          lineTotal: 96,
-          lineProfit: 36,
-          marginPercent: 37.5,
-        },
-        {
-          productId: 1,
-          productName: 'น้ำดื่ม 600ml',
-          sku: 'P001',
-          barcode: '8851234567890',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 5,
-          costPrice: 6,
-          price: 10,
-          lineCost: 30,
-          lineTotal: 50,
-          lineProfit: 20,
-          marginPercent: 40,
-        },
-        {
-          productId: 2,
-          productName: 'ขนมปังไส้ครีม',
-          sku: 'P002',
-          barcode: '8851234567891',
-          categoryName: 'เบเกอรี่',
-          quantity: 2,
-          costPrice: 16,
-          price: 25,
-          lineCost: 32,
-          lineTotal: 50,
-          lineProfit: 18,
-          marginPercent: 36,
-        },
+      10, // discount 10 baht
+    ),
+    makeOrder(
+      'RCP-TD004',
+      'RCP-10023404',
+      createDate(0, 16, 20),
+      'วิภาดา รักบริการ',
+      [
+        makeItem(9, 2, 'ของสด'),       // นมสด
+        makeItem(7, 3, 'เบเกอรี่'),    // ครัวซองต์
+        makeItem(1, 5, 'เครื่องดื่ม'), // น้ำดื่ม
       ],
-    },
+    ),
     // Yesterday
-    {
-      id: 'RCP-YD001',
-      receiptNo: 'RCP-10022410',
-      createdAt: createDate(1, 10, 10),
-      cashierName: 'สมชาย ใจดี',
-      itemCount: 4,
-      subtotal: 170,
-      discount: 0,
-      tax: 0,
-      total: 170,
-      totalCost: 104,
-      grossProfit: 66,
-      profitMarginPercent: 38.82,
-      items: [
-        {
-          productId: 8,
-          productName: 'ยาสระผม',
-          sku: 'P008',
-          barcode: '8851234567897',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 2,
-          costPrice: 52,
-          price: 85,
-          lineCost: 104,
-          lineTotal: 170,
-          lineProfit: 66,
-          marginPercent: 38.82,
-        },
+    makeOrder(
+      'RCP-YD001',
+      'RCP-10022410',
+      createDate(1, 10, 10),
+      'สมชาย ใจดี',
+      [
+        makeItem(8, 2, 'อาหารแห้ง'),   // ข้าวสาร
       ],
-    },
-    {
-      id: 'RCP-YD002',
-      receiptNo: 'RCP-10022411',
-      createdAt: createDate(1, 14, 25),
-      cashierName: 'วิภาดา รักบริการ',
-      itemCount: 5,
-      subtotal: 215,
-      discount: 0,
-      tax: 0,
-      total: 215,
-      totalCost: 133,
-      grossProfit: 82,
-      profitMarginPercent: 38.14,
-      items: [
-        {
-          productId: 3,
-          productName: 'กาแฟสำเร็จรูป',
-          sku: 'P003',
-          barcode: '8851234567892',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 3,
-          costPrice: 22,
-          price: 35,
-          lineCost: 66,
-          lineTotal: 105,
-          lineProfit: 39,
-          marginPercent: 37.14,
-        },
-        {
-          productId: 5,
-          productName: 'ช็อกโกแลตบาร์',
-          sku: 'P005',
-          barcode: '8851234567894',
-          categoryName: 'ขนมขบเคี้ยว',
-          quantity: 2,
-          costPrice: 23,
-          price: 40,
-          lineCost: 46,
-          lineTotal: 80,
-          lineProfit: 34,
-          marginPercent: 42.5,
-        },
-        {
-          productId: 4,
-          productName: 'มาม่าต้มยำ',
-          sku: 'P004',
-          barcode: '8851234567893',
-          categoryName: 'บะหมี่กึ่งสำเร็จรูป',
-          quantity: 2,
-          costPrice: 9,
-          price: 15,
-          lineCost: 18,
-          lineTotal: 30,
-          lineProfit: 12,
-          marginPercent: 40,
-        },
+    ),
+    makeOrder(
+      'RCP-YD002',
+      'RCP-10022411',
+      createDate(1, 14, 25),
+      'วิภาดา รักบริการ',
+      [
+        makeItem(3, 3, 'เครื่องดื่ม'), // กาแฟ
+        makeItem(10, 2, 'ขนม'),        // ช็อกโกแลต
+        makeItem(4, 2, 'อาหารแห้ง'),   // มาม่า
       ],
-    },
-    {
-      id: 'RCP-YD003',
-      receiptNo: 'RCP-10022412',
-      createdAt: createDate(1, 18, 50),
-      cashierName: 'สมชาย ใจดี',
-      itemCount: 8,
-      subtotal: 380,
-      discount: 20,
-      tax: 0,
-      total: 360,
-      totalCost: 228,
-      grossProfit: 132,
-      profitMarginPercent: 36.67,
-      items: [
-        {
-          productId: 1,
-          productName: 'น้ำดื่ม 600ml',
-          sku: 'P001',
-          barcode: '8851234567890',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 6,
-          costPrice: 6,
-          price: 10,
-          lineCost: 36,
-          lineTotal: 60,
-          lineProfit: 24,
-          marginPercent: 40,
-        },
-        {
-          productId: 6,
-          productName: 'น้ำอัดลมกระป๋อง',
-          sku: 'P006',
-          barcode: '8851234567895',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 5,
-          costPrice: 11,
-          price: 18,
-          lineCost: 55,
-          lineTotal: 90,
-          lineProfit: 35,
-          marginPercent: 38.89,
-        },
-        {
-          productId: 9,
-          productName: 'ผงซักฟอก 500g',
-          sku: 'P009',
-          barcode: '8851234567898',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 3,
-          costPrice: 32,
-          price: 52,
-          lineCost: 96,
-          lineTotal: 156,
-          lineProfit: 60,
-          marginPercent: 38.46,
-        },
-        {
-          productId: 2,
-          productName: 'ขนมปังไส้ครีม',
-          sku: 'P002',
-          barcode: '8851234567891',
-          categoryName: 'เบเกอรี่',
-          quantity: 2,
-          costPrice: 16,
-          price: 25,
-          lineCost: 32,
-          lineTotal: 50,
-          lineProfit: 18,
-          marginPercent: 36,
-        },
+    ),
+    makeOrder(
+      'RCP-YD003',
+      'RCP-10022412',
+      createDate(1, 18, 50),
+      'สมชาย ใจดี',
+      [
+        makeItem(1, 6, 'เครื่องดื่ม'), // น้ำดื่ม
+        makeItem(6, 5, 'เครื่องดื่ม'), // โค้ก
+        makeItem(2, 2, 'เบเกอรี่'),    // ขนมปัง
+        makeItem(5, 2, 'ของสด'),       // ไข่ไก่
       ],
-    },
+      20, // discount 20 baht
+    ),
     // 3 Days Ago
-    {
-      id: 'RCP-P3001',
-      receiptNo: 'RCP-10020101',
-      createdAt: createDate(3, 11, 20),
-      cashierName: 'วิภาดา รักบริการ',
-      itemCount: 3,
-      subtotal: 120,
-      discount: 0,
-      tax: 0,
-      total: 120,
-      totalCost: 74,
-      grossProfit: 46,
-      profitMarginPercent: 38.33,
-      items: [
-        {
-          productId: 5,
-          productName: 'ช็อกโกแลตบาร์',
-          sku: 'P005',
-          barcode: '8851234567894',
-          categoryName: 'ขนมขบเคี้ยว',
-          quantity: 3,
-          costPrice: 23,
-          price: 40,
-          lineCost: 69,
-          lineTotal: 120,
-          lineProfit: 51,
-          marginPercent: 42.5,
-        },
+    makeOrder(
+      'RCP-P3001',
+      'RCP-10020101',
+      createDate(3, 11, 20),
+      'วิภาดา รักบริการ',
+      [
+        makeItem(10, 3, 'ขนม'),        // ช็อกโกแลต
+        makeItem(7, 2, 'เบเกอรี่'),    // ครัวซองต์
       ],
-    },
+    ),
     // 5 Days Ago
-    {
-      id: 'RCP-P5001',
-      receiptNo: 'RCP-10018021',
-      createdAt: createDate(5, 15, 40),
-      cashierName: 'สมชาย ใจดี',
-      itemCount: 7,
-      subtotal: 395,
-      discount: 0,
-      tax: 0,
-      total: 395,
-      totalCost: 246,
-      grossProfit: 149,
-      profitMarginPercent: 37.72,
-      items: [
-        {
-          productId: 8,
-          productName: 'ยาสระผม',
-          sku: 'P008',
-          barcode: '8851234567897',
-          categoryName: 'ของใช้ในบ้าน',
-          quantity: 3,
-          costPrice: 52,
-          price: 85,
-          lineCost: 156,
-          lineTotal: 255,
-          lineProfit: 99,
-          marginPercent: 38.82,
-        },
-        {
-          productId: 3,
-          productName: 'กาแฟสำเร็จรูป',
-          sku: 'P003',
-          barcode: '8851234567892',
-          categoryName: 'เครื่องดื่ม',
-          quantity: 4,
-          costPrice: 22,
-          price: 35,
-          lineCost: 88,
-          lineTotal: 140,
-          lineProfit: 52,
-          marginPercent: 37.14,
-        },
+    makeOrder(
+      'RCP-P5001',
+      'RCP-10018021',
+      createDate(5, 15, 40),
+      'สมชาย ใจดี',
+      [
+        makeItem(8, 1, 'อาหารแห้ง'),   // ข้าวสาร
+        makeItem(3, 4, 'เครื่องดื่ม'), // กาแฟ
       ],
-    },
+    ),
   ];
 }
