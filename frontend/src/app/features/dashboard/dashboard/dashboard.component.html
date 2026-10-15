@@ -1,0 +1,187 @@
+<app-page-header title="แดชบอร์ด" [breadcrumbs]="breadcrumbs" />
+
+<div class="page-content">
+  @if (lowStockCount() > 0) {
+    <div class="alert alert--warning">
+      <div class="alert-content">
+        <mat-icon>warning</mat-icon>
+        <span>มีสินค้าใกล้หมด/หมดสต็อก {{ lowStockCount() }} รายการ</span>
+      </div>
+      <a routerLink="/inventory" class="alert-link">จัดการสต็อก</a>
+    </div>
+  }
+
+  <!-- Section 1: Today's Financial Overview -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">
+        <mat-icon class="section-icon">insights</mat-icon>
+        <h2>สรุปยอดขายวันนี้</h2>
+      </div>
+      @if (isManagerOrAdmin()) {
+        <a routerLink="/reports" class="view-more-link">
+          ดูรายงานละเอียด
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
+      }
+    </div>
+
+    <div class="kpi-grid">
+      <!-- Revenue -->
+      <div class="kpi-card kpi-card--revenue">
+        <div class="kpi-icon-wrap">
+          <mat-icon>payments</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">ยอดขายรวมวันนี้</span>
+          <span class="kpi-value text-primary">{{ todaySummary().totalRevenue | currency:'THB':'symbol':'1.2-2' }}</span>
+          <span class="kpi-subtext">จาก {{ todaySummary().orderCount }} รายการขาย</span>
+        </div>
+      </div>
+
+      @if (isManagerOrAdmin()) {
+        <!-- Cost of Goods Sold -->
+        <div class="kpi-card kpi-card--cost">
+          <div class="kpi-icon-wrap">
+            <mat-icon>inventory_2</mat-icon>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">ต้นทุนสินค้า (COGS)</span>
+            <span class="kpi-value text-cost">{{ todaySummary().totalCost | currency:'THB':'symbol':'1.2-2' }}</span>
+            <span class="kpi-subtext">ต้นทุนสินค้าที่ขายได้</span>
+          </div>
+        </div>
+
+        <!-- Gross Profit -->
+        <div class="kpi-card kpi-card--profit">
+          <div class="kpi-icon-wrap">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">กำไรขั้นต้น</span>
+            <span class="kpi-value text-success">{{ todaySummary().grossProfit | currency:'THB':'symbol':'1.2-2' }}</span>
+            <span class="kpi-subtext">ยอดขายหักต้นทุนสินค้า</span>
+          </div>
+        </div>
+
+        <!-- Profit Margin % -->
+        <div class="kpi-card kpi-card--margin">
+          <div class="kpi-icon-wrap">
+            <mat-icon>percent</mat-icon>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">อัตรากำไร (Margin)</span>
+            <span class="kpi-value text-margin">{{ todaySummary().profitMarginPercent | number:'1.1-2' }}%</span>
+            <span class="kpi-subtext">เปอร์เซ็นต์กำไรสุทธิเทียบยอดขาย</span>
+          </div>
+        </div>
+      }
+
+      <!-- Order Count -->
+      <div class="kpi-card kpi-card--orders">
+        <div class="kpi-icon-wrap">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">จำนวนบิลทั้งหมด</span>
+          <span class="kpi-value text-info">{{ todaySummary().orderCount }} <span class="unit">บิล</span></span>
+          <span class="kpi-subtext">รวมสินค้า {{ todaySummary().totalItemsSold }} ชิ้น</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Top Selling Products Today -->
+  @if (topSellingProducts().length > 0) {
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <mat-icon class="section-icon">leaderboard</mat-icon>
+          <h2>สินค้าขายดีวันนี้</h2>
+        </div>
+      </div>
+
+      <div class="top-products-grid">
+        @for (item of topSellingProducts(); track item.productId; let idx = $index) {
+          <div class="top-product-card">
+            <div class="rank-badge" [class.rank-badge--top]="idx === 0">#{{ idx + 1 }}</div>
+            <div class="product-details">
+              <span class="product-name">{{ item.productName }}</span>
+              <span class="product-meta">SKU: {{ item.sku }} • {{ item.categoryName || 'ทั่วไป' }}</span>
+            </div>
+            <div class="product-stats">
+              <div class="stat-col">
+                <span class="stat-label">ขายได้</span>
+                <span class="stat-val font-semibold">{{ item.quantitySold }} ชิ้น</span>
+              </div>
+              <div class="stat-col">
+                <span class="stat-label">ยอดขาย</span>
+                <span class="stat-val text-primary font-semibold">{{ item.totalSales | currency:'THB':'symbol':'1.0-0' }}</span>
+              </div>
+              @if (isManagerOrAdmin()) {
+                <div class="stat-col">
+                  <span class="stat-label">กำไร</span>
+                  <span class="stat-val text-success font-semibold">{{ item.grossProfit | currency:'THB':'symbol':'1.0-0' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Section 3: Navigation Quick Links -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">
+        <mat-icon class="section-icon">apps</mat-icon>
+        <h2>เมนูด่วน</h2>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <a routerLink="/pos" class="dashboard-card">
+        <div class="card-icon-box card-icon-box--primary">
+          <mat-icon>point_of_sale</mat-icon>
+        </div>
+        <div class="card-text">
+          <h3>ขายหน้าร้าน</h3>
+          <p>สแกนบาร์โค้ดและรับชำระเงิน POS</p>
+        </div>
+      </a>
+
+      <a routerLink="/products" class="dashboard-card">
+        <div class="card-icon-box card-icon-box--success">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <div class="card-text">
+          <h3>สินค้า</h3>
+          <p>จัดการรายการสินค้า ราคา และราคาทุน</p>
+        </div>
+      </a>
+
+      <a routerLink="/inventory" class="dashboard-card">
+        <div class="card-icon-box card-icon-box--warning">
+          <mat-icon>warehouse</mat-icon>
+        </div>
+        <div class="card-text">
+          <h3>สต็อก</h3>
+          <p>ดูและปรับสต็อก ประวัติการเคลื่อนไหว</p>
+        </div>
+      </a>
+
+      @if (isManagerOrAdmin()) {
+        <a routerLink="/reports" class="dashboard-card">
+          <div class="card-icon-box card-icon-box--info">
+            <mat-icon>analytics</mat-icon>
+          </div>
+          <div class="card-text">
+            <h3>รายงานการขาย</h3>
+            <p>สรุปยอดขาย ต้นทุน กำไรขั้นต้น</p>
+          </div>
+        </a>
+      }
+    </div>
+  </section>
+</div>

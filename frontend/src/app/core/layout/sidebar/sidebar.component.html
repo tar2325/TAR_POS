@@ -1,0 +1,25 @@
+<aside
+  class="sidebar"
+  [class.sidebar--collapsed]="collapsed()"
+  [class.sidebar--mobile-open]="mobileOpen()"
+>
+  <div class="sidebar__brand">
+    <mat-icon>point_of_sale</mat-icon>
+    @if (!collapsed() || mobileOpen()) { <span>POS System</span> }
+  </div>
+  <nav class="sidebar__nav">
+    @for (item of items(); track item.route) {
+      <a
+        class="sidebar__link"
+        [routerLink]="item.route"
+        routerLinkActive="sidebar__link--active"
+        [matTooltip]="collapsed() && !mobileOpen() ? item.label : ''"
+        matTooltipPosition="right"
+        (click)="linkClick.emit()"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+        @if (!collapsed() || mobileOpen()) { <span>{{ item.label }}</span> }
+      </a>
+    }
+  </nav>
+</aside>

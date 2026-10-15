@@ -1,0 +1,16 @@
+<header class="header">
+  <button mat-icon-button type="button" aria-label="สลับเมนู" (click)="toggleSidebar.emit()">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <div class="header__spacer"></div>
+  <button mat-button [matMenuTriggerFor]="userMenu" class="header__user">
+    <mat-icon>account_circle</mat-icon>
+    <span>{{ cashierName() }}</span>
+  </button>
+  <mat-menu #userMenu="matMenu">
+    <button mat-menu-item type="button" (click)="logout.emit()">
+      <mat-icon>logout</mat-icon>
+      <span>ออกจากระบบ</span>
+    </button>
+  </mat-menu>
+</header>

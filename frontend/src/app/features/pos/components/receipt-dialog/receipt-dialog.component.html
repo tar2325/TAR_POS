@@ -1,0 +1,81 @@
+<div class="receipt-dialog">
+  <div class="receipt-dialog__paper" id="receipt-print-area">
+    <div class="receipt__header">
+      <mat-icon>point_of_sale</mat-icon>
+      <h2>POS System</h2>
+      <p>ใบเสร็จรับเงิน / Receipt</p>
+    </div>
+
+    <mat-divider />
+
+    <div class="receipt__meta">
+      <div><span>เลขที่</span><strong>{{ receipt.receiptNo }}</strong></div>
+      <div><span>วันที่</span><strong>{{ receipt.createdAt | date:'dd/MM/yyyy HH:mm':'':'th' }}</strong></div>
+      <div><span>พนักงาน</span><strong>{{ receipt.cashierName }}</strong></div>
+    </div>
+
+    <mat-divider />
+
+    <table class="receipt__table">
+      <thead>
+        <tr>
+          <th>รายการ</th>
+          <th class="col-qty">จำนวน</th>
+          <th class="col-price">ราคา/ชิ้น</th>
+          <th class="col-total">รวม</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of receipt.items; track item.product.id) {
+          <tr>
+            <td>
+              <span class="item-name">{{ item.product.name }}</span>
+              <span class="item-barcode">{{ item.product.barcode }}</span>
+            </td>
+            <td class="col-qty">x{{ item.quantity }}</td>
+            <td class="col-price">{{ item.product.price | currency:'THB':'symbol':'1.2-2':'th' }}</td>
+            <td class="col-total">
+              {{ item.product.price * item.quantity | currency:'THB':'symbol':'1.2-2':'th' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <mat-divider />
+
+    <div class="receipt__summary">
+      <div class="receipt__row">
+        <span>รวม ({{ receipt.summary.itemCount }} ชิ้น)</span>
+        <span>{{ receipt.summary.subtotal | currency:'THB':'symbol':'1.2-2':'th' }}</span>
+      </div>
+      <div class="receipt__row">
+        <span>ส่วนลด</span>
+        <span>{{ receipt.summary.discount | currency:'THB':'symbol':'1.2-2':'th' }}</span>
+      </div>
+      <div class="receipt__row">
+        <span>ภาษี</span>
+        <span>{{ receipt.summary.tax | currency:'THB':'symbol':'1.2-2':'th' }}</span>
+      </div>
+      <div class="receipt__total">
+        <span>ยอดสุทธิ</span>
+        <strong>{{ receipt.summary.total | currency:'THB':'symbol':'1.2-2':'th' }}</strong>
+      </div>
+    </div>
+
+    <mat-divider />
+
+    <p class="receipt__thanks">ขอบคุณที่ใช้บริการ</p>
+  </div>
+
+  <div class="receipt-dialog__actions no-print">
+    <button mat-stroked-button type="button" (click)="print()">
+      <mat-icon>print</mat-icon>
+      พิมพ์ใบเสร็จ
+    </button>
+    <button mat-flat-button color="primary" type="button" (click)="close()">
+      <mat-icon>check_circle</mat-icon>
+      เสร็จสิ้น
+    </button>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+@use 'styles/tokens' as *;
+
+.page-header {
+  margin-bottom: $space-lg;
+  h1 { margin: 0; font-size: 24px; font-weight: $font-weight-title; }
+  &__breadcrumbs {
+    display: flex; align-items: center; gap: $space-xs; margin-bottom: $space-sm;
+    color: $color-text-muted; font-size: $font-size-base;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
+}

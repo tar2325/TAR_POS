@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>ปรับสต็อก — {{ data.product.name }}</h2>
+<mat-dialog-content>
+  <p>สต็อกปัจจุบัน: <strong>{{ data.product.stock }}</strong> | ขั้นต่ำ: {{ data.product.minStock }}</p>
+  <form [formGroup]="form" class="dialog-form">
+    <mat-form-field appearance="outline" class="u-full-width">
+      <mat-label>ประเภท</mat-label>
+      <mat-select formControlName="type">
+        <mat-option value="RECEIVE">รับเข้า (+)</mat-option>
+        <mat-option value="ADJUST">ปรับปรุง (+/-)</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="u-full-width">
+      <mat-label>จำนวน</mat-label>
+      <input matInput type="number" formControlName="quantity" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="u-full-width">
+      <mat-label>หมายเหตุ</mat-label>
+      <input matInput formControlName="note" />
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-stroked-button type="button" (click)="cancel()">ยกเลิก</button>
+  <button mat-flat-button color="primary" type="button" (click)="confirm()">บันทึก</button>
+</mat-dialog-actions>

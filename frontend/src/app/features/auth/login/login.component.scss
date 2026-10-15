@@ -1,0 +1,49 @@
+@use 'styles/tokens' as *;
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-lg;
+  background: radial-gradient(circle at top left, rgba($color-primary, 0.12), transparent 40%), $color-bg;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: $space-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $space-lg;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    mat-icon { font-size: 48px; width: 48px; height: 48px; color: $color-primary; }
+    h1 { margin: 0; font-size: 24px; }
+    p { margin: 4px 0 0; color: $color-text-muted; }
+  }
+
+  form { display: flex; flex-direction: column; gap: $space-md; }
+  &__error { margin: 0; color: $color-danger; }
+  &__hint { font-size: 13px; color: $color-text-muted; p { margin: 0; } }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: $space-md;
+    min-height: 100dvh;
+  }
+
+  .login-card {
+    padding: $space-md;
+    gap: $space-md;
+
+    &__brand {
+      mat-icon { font-size: 36px; width: 36px; height: 36px; }
+      h1 { font-size: 20px; }
+    }
+  }
+}

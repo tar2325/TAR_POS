@@ -1,0 +1,99 @@
+@use 'styles/tokens' as *;
+.tab-body { padding: $space-lg 0; display: flex; flex-direction: column; gap: $space-md; }
+.table-wrap { overflow: auto; background: $color-surface; border: 1px solid $color-border; border-radius: $radius-md; table { width: 100%; } th { background: $color-bg; font-weight: $font-weight-title; } td, th { padding: $space-md; } }
+.low { color: $color-danger; font-weight: $font-weight-title; }
+.badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: $font-weight-title;
+  &--danger { background: rgba($color-danger, 0.12); color: $color-danger; }
+  &--warn { background: rgba($color-warning, 0.12); color: $color-warning; }
+  &--ok { background: rgba($color-success, 0.12); color: $color-success; }
+}
+.plus { color: $color-success; }
+.minus { color: $color-danger; }
+.empty { text-align: center; color: $color-text-muted; padding: $space-xl; }
+
+.mobile-stock-list {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .tab-body {
+    padding: $space-md 0;
+  }
+
+  .table-wrap {
+    display: none;
+  }
+
+  .mobile-stock-list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+
+  .stock-card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-md;
+    box-shadow: $shadow-card;
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+
+    &__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: $space-sm;
+    }
+
+    &__info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    &__name {
+      font-size: 14px;
+      font-weight: $font-weight-title;
+      color: $color-text;
+    }
+
+    &__barcode {
+      font-size: 11px;
+      color: $color-text-muted;
+      font-family: monospace;
+    }
+
+    &__bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: $space-xs;
+      border-top: 1px dashed $color-border;
+    }
+
+    &__numbers {
+      font-size: 13px;
+      color: $color-text;
+
+      strong {
+        font-size: 15px;
+        margin-left: 2px;
+      }
+    }
+
+    &__min {
+      font-size: 11px;
+      color: $color-text-muted;
+      margin-left: 4px;
+    }
+
+    .btn-adjust {
+      height: 36px;
+      line-height: 36px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+  }
+}

@@ -1,0 +1,46 @@
+<div class="image-upload">
+  <label class="image-upload__label">รูปสินค้า</label>
+
+  @if (previewUrl()) {
+    <div class="image-upload__preview">
+      <img [src]="previewUrl()" alt="ตัวอย่างรูปสินค้า" />
+      <div class="image-upload__preview-actions">
+        <button mat-stroked-button type="button" (click)="fileInput.click()">
+          <mat-icon>photo_camera</mat-icon>
+          เปลี่ยนรูป
+        </button>
+        <button mat-stroked-button type="button" color="warn" (click)="removeImage()">
+          <mat-icon>delete</mat-icon>
+          ลบรูป
+        </button>
+      </div>
+    </div>
+  } @else {
+    <button
+      type="button"
+      class="image-upload__dropzone"
+      [class.image-upload__dropzone--dragging]="isDragging()"
+      (click)="fileInput.click()"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+    >
+      <mat-icon>cloud_upload</mat-icon>
+      <strong>แนบรูปสินค้า</strong>
+      <span>คลิกหรือลากไฟล์มาวาง</span>
+      <small>JPG, PNG, WEBP, GIF — สูงสุด 2 MB</small>
+    </button>
+  }
+
+  <input
+    #fileInput
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/gif"
+    hidden
+    (change)="onFileInput($event)"
+  />
+
+  @if (errorMessage()) {
+    <p class="image-upload__error">{{ errorMessage() }}</p>
+  }
+</div>

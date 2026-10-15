@@ -1,0 +1,540 @@
+@use 'styles/tokens' as *;
+
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: $space-lg;
+  max-width: 860px;
+}
+
+// ---------------------------------------------------------------------------
+// Online Barcode Lookup Card
+// ---------------------------------------------------------------------------
+.lookup-card {
+  background: $color-surface;
+  border: 1px solid rgba($color-primary, 0.25);
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  box-shadow: 0 4px 20px rgba(13, 148, 136, 0.06);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, $color-primary, #06b6d4, $color-accent);
+  }
+
+  &__header {
+    margin-bottom: $space-md;
+  }
+
+  &__title {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-sm;
+
+    .icon-pulse {
+      color: $color-primary;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+
+    h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 700;
+      color: $color-text;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: $color-text-muted;
+      line-height: 1.4;
+    }
+  }
+}
+
+.lookup-input-bar {
+  display: flex;
+  gap: $space-sm;
+  flex-wrap: wrap;
+}
+
+.lookup-field {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  background: $color-bg;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-md;
+  padding: 0 $space-sm;
+  transition: all 0.2s ease;
+
+  &:focus-within {
+    border-color: $color-primary;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.12);
+  }
+
+  &__icon {
+    color: $color-primary;
+    margin-right: 6px;
+  }
+
+  &__input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 12px 6px;
+    font-size: 15px;
+    color: $color-text;
+    font-family: inherit;
+    outline: none;
+
+    &::placeholder {
+      color: #94a3b8;
+      font-size: 13.5px;
+    }
+  }
+
+  .btn-clear {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      color: $color-text;
+    }
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+.btn-search {
+  height: 46px;
+  padding: 0 $space-lg;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+
+  .btn-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Lookup Result Box & Suggestion Card
+// ---------------------------------------------------------------------------
+.lookup-result-box {
+  margin-top: $space-md;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestion-card {
+  display: flex;
+  gap: $space-md;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: $radius-md;
+  padding: $space-md;
+  box-shadow: 0 2px 10px rgba(22, 163, 74, 0.08);
+
+  &__media {
+    flex-shrink: 0;
+  }
+
+  .product-thumb {
+    width: 88px;
+    height: 88px;
+    border-radius: $radius-sm;
+    object-fit: cover;
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
+
+    &.placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+    }
+  }
+
+  &__info {
+    flex: 1;
+  }
+
+  .suggestion-title {
+    margin: 6px 0 8px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #14532d;
+    line-height: 1.4;
+  }
+
+  .suggestion-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-md;
+    font-size: 13.5px;
+    color: #374151;
+    margin-bottom: $space-md;
+
+    strong {
+      color: #1f2937;
+    }
+  }
+
+  .suggestion-actions {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex-wrap: wrap;
+  }
+
+  .btn-apply {
+    background: #16a34a !important;
+    color: #ffffff;
+    font-weight: 600;
+  }
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &--success {
+    background: #bbf7d0;
+    color: #166534;
+  }
+
+  &--origin {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &--source {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  &--confidence {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+// Alert Boxes
+.alert-box {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-sm;
+  padding: $space-md;
+  border-radius: $radius-md;
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  &__content {
+    flex: 1;
+
+    strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.4;
+    }
+  }
+
+  &--info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+  }
+
+  &--warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+
+    .hint-text {
+      display: block;
+      margin-top: 6px;
+      color: #78350f;
+    }
+  }
+
+  &--danger {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+}
+
+.retailer-links {
+  margin-top: 8px;
+  font-size: 12.5px;
+
+  span {
+    color: #78350f;
+    font-weight: 600;
+  }
+}
+
+.link-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.chip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  transition: all 0.15s;
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  &:hover {
+    background: #fef3c7;
+    border-color: #f59e0b;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Standard Form Card Styles
+// ---------------------------------------------------------------------------
+.form-card {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  box-shadow: $shadow-card;
+}
+
+.form-note {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  margin-bottom: $space-md;
+  padding: $space-sm $space-md;
+  border-radius: $radius-md;
+  background: rgba($color-primary, 0.06);
+  color: $color-text-muted;
+  font-size: 13.5px;
+
+  mat-icon {
+    flex-shrink: 0;
+    color: $color-primary;
+  }
+}
+
+.barcode-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-md;
+  margin-bottom: $space-md;
+  padding: $space-md;
+  border-radius: $radius-md;
+  background: $color-bg;
+  border: 1px solid $color-border;
+
+  &__input {
+    flex: 1;
+    min-width: 240px;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-md;
+
+  .full {
+    grid-column: 1 / -1;
+  }
+}
+
+.sku-regen {
+  align-self: center;
+  margin-bottom: $space-md;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-sm;
+  margin-top: $space-lg;
+  padding-top: $space-lg;
+  border-top: 1px solid $color-border;
+
+  button[type='submit'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  .lookup-card {
+    padding: $space-md;
+  }
+
+  .lookup-input-bar {
+    flex-direction: column;
+
+    .lookup-field {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .btn-search {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .suggestion-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .badge-row {
+      justify-content: center;
+    }
+
+    .suggestion-meta {
+      justify-content: center;
+    }
+
+    .suggestion-actions {
+      justify-content: center;
+      width: 100%;
+
+      button, a {
+        flex: 1 1 100%;
+        justify-content: center;
+      }
+    }
+  }
+
+  .form-card {
+    padding: $space-md;
+  }
+
+  .barcode-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $space-sm;
+    padding: $space-sm;
+
+    &__input {
+      min-width: 0;
+      width: 100%;
+    }
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: $space-sm;
+  }
+
+  .sku-regen {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: $space-sm;
+
+    button, a {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

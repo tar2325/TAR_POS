@@ -1,0 +1,41 @@
+<div class="barcode-search-pill" role="search">
+  <div class="barcode-search-pill__icon" aria-hidden="true">
+    <mat-icon>qr_code_scanner</mat-icon>
+  </div>
+
+  <input
+    #barcodeInput
+    type="text"
+    class="barcode-search-pill__input"
+    placeholder="สแกนบาร์โค้ด หรือพิมพ์รหัสสินค้า (Enter)..."
+    aria-label="สแกนบาร์โค้ดหรือพิมพ์รหัสสินค้า"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="off"
+    spellcheck="false"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+  />
+
+  @if (hasValue()) {
+    <button
+      type="button"
+      class="barcode-search-pill__clear"
+      aria-label="ล้างข้อความ"
+      (click)="clear()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  }
+
+  <button
+    type="button"
+    class="barcode-search-pill__submit"
+    aria-label="สแกนหรือค้นหา"
+    (click)="submit()"
+    title="กด Enter หรือสแกนเพื่อเพิ่มสินค้า"
+  >
+    <span class="barcode-search-pill__badge">Enter ↵</span>
+    <mat-icon class="barcode-search-pill__submit-icon">search</mat-icon>
+  </button>
+</div>

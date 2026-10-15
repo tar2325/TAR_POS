@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>
+  <mat-icon>upload_file</mat-icon>
+  นำเข้าสินค้าหลายรายการ
+</h2>
+
+<mat-dialog-content class="bulk-import">
+  <p class="bulk-import__hint">
+    วางรายการสินค้าทีละบรรทัด — ระบบสร้างบาร์โค้ด EAN-13 จากเลข SKU อัตโนมัติ ราคาไม่ใส่ได้ (ตั้งทีหลัง)
+  </p>
+
+  <mat-form-field appearance="outline" class="u-full-width">
+    <mat-label>หมวดเริ่มต้น (ถ้าไม่ระบุในบรรทัด)</mat-label>
+    <mat-select [ngModel]="defaultCategoryId()" (ngModelChange)="defaultCategoryId.set($event)">
+      @for (category of categories(); track category.id) {
+        <mat-option [value]="category.id">{{ category.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="u-full-width">
+    <mat-label>รายการสินค้า</mat-label>
+    <textarea
+      matInput
+      rows="12"
+      [ngModel]="bulkText()"
+      (ngModelChange)="bulkText.set($event)"
+      spellcheck="false"
+    ></textarea>
+    <mat-hint>SKU,ชื่อ | SKU,ชื่อ,หมวด | SKU,ชื่อ,หมวด,สต็อก | SKU,ชื่อ,หมวด,สต็อก,ราคา</mat-hint>
+  </mat-form-field>
+
+  @if (previewCount() > 0) {
+    <p class="bulk-import__preview">พร้อมนำเข้า {{ previewCount() }} รายการ</p>
+  }
+
+  @if (parseErrors().length > 0) {
+    <div class="bulk-import__errors">
+      @for (error of parseErrors(); track error) {
+        <p>{{ error }}</p>
+      }
+    </div>
+  }
+
+  @if (importErrors().length > 0) {
+    <div class="bulk-import__errors">
+      @for (error of importErrors(); track error) {
+        <p>{{ error }}</p>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button type="button" (click)="close()">ยกเลิก</button>
+  <button mat-stroked-button type="button" (click)="preview()">ตรวจสอบ</button>
+  <button mat-flat-button color="primary" type="button" (click)="import()">
+    <mat-icon>upload</mat-icon>
+    นำเข้า
+  </button>
+</mat-dialog-actions>

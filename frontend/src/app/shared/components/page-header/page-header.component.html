@@ -1,0 +1,13 @@
+<header class="page-header">
+  @if (breadcrumbs().length) {
+    <nav class="page-header__breadcrumbs">
+      @for (item of breadcrumbs(); track item.label; let last = $last) {
+        @if (!last && item.route) {
+          <a [routerLink]="item.route">{{ item.label }}</a>
+          <mat-icon>chevron_right</mat-icon>
+        } @else { <span>{{ item.label }}</span> }
+      }
+    </nav>
+  }
+  <h1>{{ title() }}</h1>
+</header>

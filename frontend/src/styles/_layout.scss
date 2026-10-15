@@ -1,0 +1,11 @@
+@use 'styles/tokens' as *;
+
+.page-content {
+  padding: $space-lg;
+  max-width: 1280px;
+  margin: 0 auto;
+
+  @media (max-width: $bp-tablet) {
+    padding: $space-md $space-sm;
+  }
+}

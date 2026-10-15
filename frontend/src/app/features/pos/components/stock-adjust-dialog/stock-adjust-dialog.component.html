@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>
+  <mat-icon>inventory</mat-icon>
+  สต็อกสินค้าไม่พอ
+</h2>
+
+<mat-dialog-content class="stock-dialog__content">
+  <p class="stock-dialog__message">{{ data.message }}</p>
+
+  <div class="stock-dialog__product">
+    <strong>{{ data.product.name }}</strong>
+    <span>บาร์โค้ด: {{ data.product.barcode }}</span>
+    <span>สต็อกปัจจุบัน: {{ data.product.stock }}</span>
+    <span>ต้องการเพิ่มในตะกร้า: {{ data.neededQty }} ชิ้น</span>
+  </div>
+
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="u-full-width">
+      <mat-label>เพิ่มสต็อก (Manual)</mat-label>
+      <input matInput type="number" formControlName="addQty" min="1" />
+      @if (form.controls.addQty.touched && form.controls.addQty.hasError('required')) {
+        <mat-error>กรุณาระบุจำนวน</mat-error>
+      }
+      @if (form.controls.addQty.touched && form.controls.addQty.hasError('min')) {
+        <mat-error>ต้องมากกว่า 0</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button type="button" (click)="cancel()">ยกเลิก</button>
+  <button mat-flat-button color="primary" type="button" (click)="confirm()">
+    เพิ่มสต็อกและใส่ตะกร้า
+  </button>
+</mat-dialog-actions>

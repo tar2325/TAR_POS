@@ -1,0 +1,12 @@
+{
+  "name": "pos-project-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "POS System root shortcuts",
+  "scripts": {
+    "start": "npm --prefix frontend start",
+    "share": "npx localtunnel --port 4200",
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix frontend test"
+  }
+}

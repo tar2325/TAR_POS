@@ -1,0 +1,28 @@
+<div class="login-page">
+  <mat-card class="login-card">
+    <div class="login-card__brand">
+      <mat-icon>point_of_sale</mat-icon>
+      <div>
+        <h1>POS System</h1>
+        <p>เข้าสู่ระบบ</p>
+      </div>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <mat-form-field appearance="outline" class="u-full-width">
+        <mat-label>ชื่อผู้ใช้</mat-label>
+        <input matInput formControlName="username" autocomplete="username" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="u-full-width">
+        <mat-label>รหัสผ่าน</mat-label>
+        <input matInput type="password" formControlName="password" autocomplete="current-password" />
+      </mat-form-field>
+      @if (errorMessage()) { <p class="login-card__error">{{ errorMessage() }}</p> }
+      <button mat-flat-button color="primary" type="submit" class="u-full-width" [disabled]="loading()">
+        @if (loading()) { <mat-spinner diameter="20" /> } @else { เข้าสู่ระบบ }
+      </button>
+    </form>
+    <div class="login-card__hint">
+      <p>ทดสอบ: admin/admin123 · manager/manager123 · cashier/cashier123</p>
+    </div>
+  </mat-card>
+</div>

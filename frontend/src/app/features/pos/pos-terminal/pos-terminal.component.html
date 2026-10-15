@@ -1,0 +1,168 @@
+<div class="pos-terminal">
+
+  <header class="pos-terminal__header">
+    <div class="pos-terminal__header-left">
+      <a routerLink="/dashboard" mat-icon-button class="pos-terminal__back" aria-label="กลับ">
+        <mat-icon>arrow_back</mat-icon>
+      </a>
+
+      <div class="pos-terminal__brand">
+        <mat-icon class="pos-terminal__brand-icon">storefront</mat-icon>
+        <div class="pos-terminal__brand-text">
+          <span class="pos-terminal__brand-title">ขายหน้าร้าน</span>
+          <span class="pos-terminal__brand-sub">{{ cashierName() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pos-terminal__search">
+      <app-barcode-input (scan)="onBarcodeScanned($event)" />
+    </div>
+
+    <div class="pos-terminal__header-right">
+      <div class="pos-terminal__clock">
+        <mat-icon>schedule</mat-icon>
+        <span>{{ now() | date:'HH:mm':'':'th' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Segmented View Switcher -->
+  <nav class="pos-mobile-nav" aria-label="สลับหน้าจอสินค้าและตะกร้า">
+    <button
+      type="button"
+      class="pos-mobile-nav__tab"
+      [class.pos-mobile-nav__tab--active]="mobileView() === 'products'"
+      (click)="setMobileView('products')"
+    >
+      <mat-icon>grid_view</mat-icon>
+      <span>เลือกสินค้า ({{ filteredProducts().length }})</span>
+    </button>
+    <button
+      type="button"
+      class="pos-mobile-nav__tab"
+      [class.pos-mobile-nav__tab--active]="mobileView() === 'cart'"
+      (click)="setMobileView('cart')"
+    >
+      <mat-icon>shopping_cart</mat-icon>
+      <span>ตะกร้า</span>
+      @if (summary().itemCount > 0) {
+        <span class="pos-mobile-nav__badge">{{ summary().itemCount }}</span>
+      }
+    </button>
+  </nav>
+
+  <div class="pos-terminal__body">
+    <section class="pos-terminal__products" [class.is-mobile-hidden]="mobileView() !== 'products'">
+      <div class="pos-terminal__section-head">
+        <h3>สินค้า</h3>
+        <span class="pos-terminal__badge">{{ filteredProducts().length }} รายการ</span>
+      </div>
+
+      <nav class="category-tabs" aria-label="หมวดสินค้า">
+        <button
+          type="button"
+          class="category-tab"
+          [class.category-tab--active]="selectedCategory() === 'all'"
+          (click)="selectCategory('all')"
+        >
+          <mat-icon>apps</mat-icon>
+          <span>ทั้งหมด</span>
+        </button>
+
+        @for (category of categories(); track category.id) {
+          <button
+            type="button"
+            class="category-tab"
+            [class.category-tab--active]="selectedCategory() === category.id"
+            (click)="selectCategory(category.id)"
+          >
+            <mat-icon>{{ category.icon }}</mat-icon>
+            <span>{{ category.name }}</span>
+          </button>
+        }
+      </nav>
+
+      @if (filteredProducts().length === 0) {
+        <div class="pos-terminal__empty">
+          <mat-icon>inventory_2</mat-icon>
+          <p>ไม่มีสินค้าในหมวดนี้</p>
+        </div>
+      } @else {
+        <div class="product-grid">
+          @for (product of filteredProducts(); track product.id) {
+            <button type="button" class="product-card" (click)="onProductClick(product)">
+              <div class="product-card__media">
+                @if (showProductImage(product)) {
+                  <img
+                    class="product-card__image"
+                    [src]="productImage(product)"
+                    [alt]="product.name"
+                    loading="lazy"
+                    (error)="onImageError(product.id)"
+                  />
+                } @else {
+                  <div class="product-card__fallback">
+                    <mat-icon>{{ categoryIcon(product.categoryId) }}</mat-icon>
+                  </div>
+                }
+                @if (product.stock <= 0) {
+                  <span class="product-card__ribbon product-card__ribbon--out">หมด</span>
+                } @else if (product.stock <= product.minStock) {
+                  <span class="product-card__ribbon product-card__ribbon--low">ใกล้หมด</span>
+                }
+              </div>
+              <div class="product-card__body">
+                <span class="product-card__category">{{ categoryName(product.categoryId) }}</span>
+                <strong class="product-card__name">{{ product.name }}</strong>
+                @if (product.price > 0) {
+                  <span class="product-card__price">
+                    {{ product.price | currency: 'THB' : 'symbol' : '1.2-2' : 'th' }}
+                  </span>
+                } @else {
+                  <span class="product-card__price product-card__price--pending">ยังไม่ตั้งราคา</span>
+                }
+                <span class="product-card__meta">
+                  <span class="product-card__stock">{{ product.stock <= 0 ? 'สต็อก 0' : 'คงเหลือ ' + product.stock }}</span>
+                  <span class="product-card__barcode">{{ product.barcode }}</span>
+                </span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+
+      @if (summary().itemCount > 0) {
+        <div class="pos-floating-bar-wrap">
+          <div class="pos-floating-bar" (click)="setMobileView('cart')">
+            <div class="pos-floating-bar__left">
+              <span class="pos-floating-bar__count">{{ summary().itemCount }}</span>
+              <div class="pos-floating-bar__info">
+                <span class="pos-floating-bar__label">ยอดชำระสุทธิ</span>
+                <strong class="pos-floating-bar__total">
+                  {{ summary().total | currency: 'THB' : 'symbol' : '1.2-2' : 'th' }}
+                </strong>
+              </div>
+            </div>
+            <div class="pos-floating-bar__btn">
+              <span>ดูตะกร้า / คิดเงิน</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <aside class="pos-terminal__cart" [class.is-mobile-hidden]="mobileView() !== 'cart'">
+      <app-cart-panel
+        [items]="cartItems()"
+        [summary]="summary()"
+        (increase)="onIncrease($event)"
+        (decrease)="onDecrease($event)"
+        (remove)="onRemove($event)"
+        (clear)="onClear()"
+        (checkout)="onCheckout()"
+      />
+    </aside>
+  </div>
+</div>

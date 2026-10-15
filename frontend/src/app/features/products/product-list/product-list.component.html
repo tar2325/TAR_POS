@@ -1,0 +1,100 @@
+<app-page-header title="จัดการสินค้า" [breadcrumbs]="breadcrumbs" />
+<div class="page-content">
+  <div class="toolbar">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>ค้นหา</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)" />
+    </mat-form-field>
+    @if (canEdit()) {
+      <button mat-stroked-button type="button" (click)="openBulkImport()">
+        <mat-icon>upload_file</mat-icon>
+        นำเข้าหลายรายการ
+      </button>
+      <a mat-flat-button color="primary" routerLink="/products/new">
+        <mat-icon>add</mat-icon> เพิ่มสินค้า
+      </a>
+    }
+  </div>
+  @if (loading()) {
+    <app-loading />
+  } @else if (products().length === 0) {
+    <app-empty-state icon="inventory_2" title="ไม่พบสินค้า" />
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="products()">
+        <ng-container matColumnDef="image">
+          <th mat-header-cell *matHeaderCellDef>รูป</th>
+          <td mat-cell *matCellDef="let p">
+            <img class="product-thumb" [src]="productImage(p)" [alt]="p.name" loading="lazy" />
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="sku"><th mat-header-cell *matHeaderCellDef>SKU</th><td mat-cell *matCellDef="let p">{{ p.sku }}</td></ng-container>
+        <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>ชื่อ</th><td mat-cell *matCellDef="let p">{{ p.name }}</td></ng-container>
+        <ng-container matColumnDef="category"><th mat-header-cell *matHeaderCellDef>หมวด</th><td mat-cell *matCellDef="let p">{{ categoryName(p.categoryId) }}</td></ng-container>
+        <ng-container matColumnDef="price">
+          <th mat-header-cell *matHeaderCellDef>ราคา</th>
+          <td mat-cell *matCellDef="let p" class="u-text-right">
+            @if (p.price > 0) {
+              {{ p.price | currency:'THB':'symbol':'1.2-2':'th' }}
+            } @else {
+              <span class="price-pending">ยังไม่ตั้งราคา</span>
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="stock"><th mat-header-cell *matHeaderCellDef>สต็อก</th><td mat-cell *matCellDef="let p" class="u-text-right">{{ p.stock }}</td></ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>จัดการ</th>
+          <td mat-cell *matCellDef="let p">
+            @if (canEdit()) {
+              <a mat-icon-button [routerLink]="['/products', p.id, 'edit']"><mat-icon>edit</mat-icon></a>
+              <button mat-icon-button color="warn" type="button" (click)="deleteProduct(p)"><mat-icon>delete</mat-icon></button>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </div>
+
+    <!-- Mobile Card List View (Visible on <= 640px) -->
+    <div class="mobile-card-list">
+      @for (p of products(); track p.id) {
+        <div class="mobile-card">
+          <img class="mobile-card__img" [src]="productImage(p)" [alt]="p.name" loading="lazy" />
+          <div class="mobile-card__content">
+            <span class="mobile-card__cat">{{ categoryName(p.categoryId) }}</span>
+            <strong class="mobile-card__name">{{ p.name }}</strong>
+            <span class="mobile-card__sub">
+              <span>SKU: {{ p.sku }}</span>
+              <span>•</span>
+              <span class="mobile-card__barcode">{{ p.barcode }}</span>
+            </span>
+            <div class="mobile-card__meta">
+              <span class="mobile-card__price">
+                @if (p.price > 0) {
+                  {{ p.price | currency:'THB':'symbol':'1.2-2':'th' }}
+                } @else {
+                  <span class="price-pending">ยังไม่ตั้งราคา</span>
+                }
+              </span>
+              <span class="mobile-card__stock" [class.mobile-card__stock--low]="p.stock <= 10">
+                คงเหลือ {{ p.stock }}
+              </span>
+            </div>
+          </div>
+          @if (canEdit()) {
+            <div class="mobile-card__actions">
+              <a mat-icon-button [routerLink]="['/products', p.id, 'edit']">
+                <mat-icon>edit</mat-icon>
+              </a>
+              <button mat-icon-button color="warn" type="button" (click)="deleteProduct(p)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

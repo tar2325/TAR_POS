@@ -1,0 +1,491 @@
+<app-page-header title="รายงานสรุปการขายและกำไร" [breadcrumbs]="breadcrumbs">
+  <div class="header-actions">
+    <button mat-stroked-button class="action-btn" (click)="exportCsv()">
+      <mat-icon>file_download</mat-icon>
+      <span>ส่งออก CSV</span>
+    </button>
+    <button mat-flat-button color="primary" class="action-btn" (click)="printReport()">
+      <mat-icon>print</mat-icon>
+      <span>พิมพ์รายงาน</span>
+    </button>
+  </div>
+</app-page-header>
+
+<div class="page-content">
+  <!-- Period Filter Bar -->
+  <div class="filter-card">
+    <div class="period-buttons">
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod() === 'today'"
+        (click)="setPeriod('today')"
+      >
+        วันนี้
+      </button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod() === 'yesterday'"
+        (click)="setPeriod('yesterday')"
+      >
+        เมื่อวานนี้
+      </button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod() === 'last7days'"
+        (click)="setPeriod('last7days')"
+      >
+        7 วันล่าสุด
+      </button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod() === 'last30days'"
+        (click)="setPeriod('last30days')"
+      >
+        30 วันล่าสุด
+      </button>
+      <button
+        type="button"
+        class="period-btn"
+        [class.active]="selectedPeriod() === 'custom'"
+        (click)="setPeriod('custom')"
+      >
+        กำหนดเอง
+      </button>
+    </div>
+
+    @if (selectedPeriod() === 'custom') {
+      <div class="custom-dates">
+        <label class="date-input-group">
+          <span class="date-label">ตั้งแต่วันที่:</span>
+          <input
+            type="date"
+            class="custom-date-picker"
+            [ngModel]="customStart()"
+            (ngModelChange)="customStart.set($event); onCustomDateChange()"
+          />
+        </label>
+        <span class="date-sep">ถึง</span>
+        <label class="date-input-group">
+          <span class="date-label">ถึงวันที่:</span>
+          <input
+            type="date"
+            class="custom-date-picker"
+            [ngModel]="customEnd()"
+            (ngModelChange)="customEnd.set($event); onCustomDateChange()"
+          />
+        </label>
+      </div>
+    }
+  </div>
+
+  <!-- Financial KPI Overview Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--revenue">
+      <div class="kpi-icon-wrap">
+        <mat-icon>payments</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">ยอดขายรวม</span>
+        <span class="kpi-value text-primary">{{ summary().totalRevenue | currency:'THB':'symbol':'1.2-2' }}</span>
+        <span class="kpi-subtext">ช่วง: {{ summary().date }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--cost">
+      <div class="kpi-icon-wrap">
+        <mat-icon>inventory_2</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">ต้นทุนรวม (COGS)</span>
+        <span class="kpi-value text-cost">{{ summary().totalCost | currency:'THB':'symbol':'1.2-2' }}</span>
+        <span class="kpi-subtext">ต้นทุนสินค้าทั้งหมดที่ขายได้</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--profit">
+      <div class="kpi-icon-wrap">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">กำไรขั้นต้น (Gross Profit)</span>
+        <span class="kpi-value text-success">{{ summary().grossProfit | currency:'THB':'symbol':'1.2-2' }}</span>
+        <span class="kpi-subtext">ยอดขายหักต้นทุนสินค้า</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--margin">
+      <div class="kpi-icon-wrap">
+        <mat-icon>percent</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">อัตรากำไร (Margin)</span>
+        <span class="kpi-value text-margin">{{ summary().profitMarginPercent | number:'1.1-2' }}%</span>
+        <span class="kpi-subtext">สัดส่วนกำไรต่อยอดขาย</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--orders">
+      <div class="kpi-icon-wrap">
+        <mat-icon>receipt_long</mat-icon>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">จำนวนบิลขาย</span>
+        <span class="kpi-value text-info">{{ summary().orderCount }} <span class="unit">บิล</span></span>
+        <span class="kpi-subtext">สินค้าขายได้รวม {{ summary().totalItemsSold }} ชิ้น</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Reports Tabs -->
+  <div class="report-content-card">
+    <mat-tab-group animationDuration="0ms">
+      <!-- TAB 1: Product Breakdown -->
+      <mat-tab label="สรุปยอดขายแยกตามสินค้า">
+        <div class="tab-pane">
+          <div class="tab-toolbar">
+            <div class="search-input-wrap">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อสินค้า, SKU, บาร์โค้ด..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+              />
+              @if (searchQuery()) {
+                <button type="button" class="clear-btn" (click)="searchQuery.set('')">
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </div>
+            <div class="table-summary-tag">
+              พบ {{ filteredProducts().length }} รายการ
+            </div>
+          </div>
+
+          <!-- Desktop Table View -->
+          <div class="table-container desktop-only">
+            <table mat-table [dataSource]="filteredProducts()" class="report-table">
+              <ng-container matColumnDef="index">
+                <th mat-header-cell *matHeaderCellDef class="w-12 text-center">#</th>
+                <td mat-cell *matCellDef="let item; let i = index" class="text-center font-medium">{{ i + 1 }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="productName">
+                <th mat-header-cell *matHeaderCellDef>สินค้า</th>
+                <td mat-cell *matCellDef="let item">
+                  <div class="cell-product">
+                    <span class="font-semibold text-main">{{ item.productName }}</span>
+                    <span class="text-muted text-xs">SKU: {{ item.sku }} • {{ item.barcode }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="categoryName">
+                <th mat-header-cell *matHeaderCellDef>หมวดหมู่</th>
+                <td mat-cell *matCellDef="let item">
+                  <span class="badge">{{ item.categoryName || 'ทั่วไป' }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="quantitySold">
+                <th mat-header-cell *matHeaderCellDef class="text-right">จำนวนขาย</th>
+                <td mat-cell *matCellDef="let item" class="text-right font-medium">
+                  {{ item.quantitySold }} ชิ้น
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="totalSales">
+                <th mat-header-cell *matHeaderCellDef class="text-right">ยอดขายรวม</th>
+                <td mat-cell *matCellDef="let item" class="text-right font-semibold text-primary">
+                  {{ item.totalSales | currency:'THB':'symbol':'1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="totalCost">
+                <th mat-header-cell *matHeaderCellDef class="text-right">ต้นทุนรวม</th>
+                <td mat-cell *matCellDef="let item" class="text-right text-cost">
+                  {{ item.totalCost | currency:'THB':'symbol':'1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="grossProfit">
+                <th mat-header-cell *matHeaderCellDef class="text-right">กำไรขั้นต้น</th>
+                <td mat-cell *matCellDef="let item" class="text-right font-semibold text-success">
+                  {{ item.grossProfit | currency:'THB':'symbol':'1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="profitMarginPercent">
+                <th mat-header-cell *matHeaderCellDef class="text-right">อัตรากำไร</th>
+                <td mat-cell *matCellDef="let item" class="text-right font-medium text-margin">
+                  {{ item.profitMarginPercent | number:'1.1-2' }}%
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="productColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: productColumns"></tr>
+            </table>
+
+            @if (filteredProducts().length === 0) {
+              <div class="empty-state">
+                <mat-icon>remove_shopping_cart</mat-icon>
+                <p>ไม่พบข้อมูลการขายสินค้าในช่วงเวลาที่เลือก</p>
+              </div>
+            }
+          </div>
+
+          <!-- Mobile Cards View -->
+          <div class="mobile-only-cards">
+            @for (item of filteredProducts(); track item.productId; let i = $index) {
+              <div class="mobile-product-card">
+                <div class="mp-header">
+                  <span class="mp-index">#{{ i + 1 }}</span>
+                  <div class="mp-title">
+                    <span class="mp-name">{{ item.productName }}</span>
+                    <span class="mp-sku">SKU: {{ item.sku }} • {{ item.categoryName || 'ทั่วไป' }}</span>
+                  </div>
+                  <span class="mp-qty">{{ item.quantitySold }} ชิ้น</span>
+                </div>
+                <div class="mp-stats-grid">
+                  <div class="stat-box">
+                    <span class="label">ยอดขาย</span>
+                    <span class="val text-primary">{{ item.totalSales | currency:'THB':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="label">ต้นทุน</span>
+                    <span class="val text-cost">{{ item.totalCost | currency:'THB':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="label">กำไร</span>
+                    <span class="val text-success">{{ item.grossProfit | currency:'THB':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="label">Margin</span>
+                    <span class="val text-margin">{{ item.profitMarginPercent | number:'1.1-1' }}%</span>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <mat-icon>remove_shopping_cart</mat-icon>
+                <p>ไม่พบข้อมูลการขายสินค้า</p>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- TAB 2: Orders / Receipts Breakdown -->
+      <mat-tab label="ประวัติใบเสร็จการขาย">
+        <div class="tab-pane">
+          <div class="tab-toolbar">
+            <div class="search-input-wrap">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                placeholder="ค้นหาเลขที่บิล, ชื่อแคชเชียร์..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+              />
+              @if (searchQuery()) {
+                <button type="button" class="clear-btn" (click)="searchQuery.set('')">
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </div>
+            <div class="table-summary-tag">
+              พบ {{ filteredOrders().length }} บิล
+            </div>
+          </div>
+
+          <!-- Desktop Orders Table -->
+          <div class="table-container desktop-only">
+            <table mat-table [dataSource]="filteredOrders()" class="report-table">
+              <ng-container matColumnDef="receiptNo">
+                <th mat-header-cell *matHeaderCellDef>เลขที่บิล</th>
+                <td mat-cell *matCellDef="let order" class="font-semibold text-main">
+                  {{ order.receiptNo }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef>วัน-เวลา</th>
+                <td mat-cell *matCellDef="let order">
+                  {{ order.createdAt | date:'d/MM/yyyy HH:mm' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="cashierName">
+                <th mat-header-cell *matHeaderCellDef>แคชเชียร์</th>
+                <td mat-cell *matCellDef="let order">
+                  {{ order.cashierName }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="itemCount">
+                <th mat-header-cell *matHeaderCellDef class="text-center">จำนวนชิ้น</th>
+                <td mat-cell *matCellDef="let order" class="text-center font-medium">
+                  {{ order.itemCount }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="total">
+                <th mat-header-cell *matHeaderCellDef class="text-right">ยอดชำระ</th>
+                <td mat-cell *matCellDef="let order" class="text-right font-semibold text-primary">
+                  {{ order.total | currency:'THB':'symbol':'1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="totalCost">
+                <th mat-header-cell *matHeaderCellDef class="text-right">ต้นทุนรวม</th>
+                <td mat-cell *matCellDef="let order" class="text-right text-cost">
+                  {{ order.totalCost | currency:'THB':'symbol':'1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="grossProfit">
+                <th mat-header-cell *matHeaderCellDef class="text-right">กำไร</th>
+                <td mat-cell *matCellDef="let order" class="text-right font-semibold text-success">
+                  {{ order.grossProfit | currency:'THB':'symbol':'1.2-2' }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="profitMarginPercent">
+                <th mat-header-cell *matHeaderCellDef class="text-right">Margin</th>
+                <td mat-cell *matCellDef="let order" class="text-right font-medium text-margin">
+                  {{ order.profitMarginPercent | number:'1.1-2' }}%
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="text-center w-24">รายละเอียด</th>
+                <td mat-cell *matCellDef="let order" class="text-center">
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    title="ดูรายการสินค้าในบิล"
+                    (click)="viewOrderDetail(order)"
+                  >
+                    <mat-icon>{{ selectedOrder()?.id === order.id ? 'expand_less' : 'visibility' }}</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="orderColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: orderColumns"></tr>
+            </table>
+
+            @if (filteredOrders().length === 0) {
+              <div class="empty-state">
+                <mat-icon>receipt</mat-icon>
+                <p>ไม่พบรายการบิลการขายในช่วงเวลาที่เลือก</p>
+              </div>
+            }
+          </div>
+
+          <!-- Mobile Orders Cards -->
+          <div class="mobile-only-cards">
+            @for (order of filteredOrders(); track order.id) {
+              <div class="mobile-order-card">
+                <div class="mo-header">
+                  <div>
+                    <span class="mo-receipt">{{ order.receiptNo }}</span>
+                    <span class="mo-date">{{ order.createdAt | date:'d/MM/yy HH:mm' }} • {{ order.cashierName }}</span>
+                  </div>
+                  <button
+                    mat-stroked-button
+                    class="btn-detail-sm"
+                    (click)="viewOrderDetail(order)"
+                  >
+                    {{ selectedOrder()?.id === order.id ? 'ซ่อน' : 'ดูสินค้า' }}
+                  </button>
+                </div>
+                <div class="mp-stats-grid">
+                  <div class="stat-box">
+                    <span class="label">ยอดชำระ</span>
+                    <span class="val text-primary">{{ order.total | currency:'THB':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="label">ต้นทุน</span>
+                    <span class="val text-cost">{{ order.totalCost | currency:'THB':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="label">กำไร</span>
+                    <span class="val text-success">{{ order.grossProfit | currency:'THB':'symbol':'1.0-0' }}</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="label">Margin</span>
+                    <span class="val text-margin">{{ order.profitMarginPercent | number:'1.1-1' }}%</span>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <mat-icon>receipt</mat-icon>
+                <p>ไม่พบรายการบิลการขาย</p>
+              </div>
+            }
+          </div>
+
+          <!-- Selected Order Detail Drawer / Panel -->
+          @if (selectedOrder(); as ord) {
+            <div class="order-detail-panel">
+              <div class="panel-header">
+                <div>
+                  <h3>รายละเอียดบิล: {{ ord.receiptNo }}</h3>
+                  <span class="panel-subtitle">
+                    เวลา: {{ ord.createdAt | date:'d/MM/yyyy HH:mm:ss' }} | แคชเชียร์: {{ ord.cashierName }}
+                  </span>
+                </div>
+                <button mat-icon-button (click)="closeOrderDetail()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+
+              <div class="order-items-table-wrap">
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th>สินค้า</th>
+                      <th class="text-right">จำนวน</th>
+                      <th class="text-right">ราคาขาย</th>
+                      <th class="text-right">ราคาทุน</th>
+                      <th class="text-right">ยอดรวม</th>
+                      <th class="text-right">กำไร</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (it of ord.items; track it.productId) {
+                      <tr>
+                        <td>
+                          <div class="font-semibold">{{ it.productName }}</div>
+                          <div class="text-xs text-muted">{{ it.sku }}</div>
+                        </td>
+                        <td class="text-right">{{ it.quantity }}</td>
+                        <td class="text-right">{{ it.price | currency:'THB':'symbol':'1.0-0' }}</td>
+                        <td class="text-right text-cost">{{ it.costPrice | currency:'THB':'symbol':'1.0-0' }}</td>
+                        <td class="text-right font-semibold text-primary">{{ it.lineTotal | currency:'THB':'symbol':'1.0-0' }}</td>
+                        <td class="text-right font-semibold text-success">{{ it.lineProfit | currency:'THB':'symbol':'1.0-0' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="4" class="font-bold text-right">ยอดรวมบิล:</td>
+                      <td class="text-right font-bold text-primary">{{ ord.total | currency:'THB':'symbol':'1.2-2' }}</td>
+                      <td class="text-right font-bold text-success">{{ ord.grossProfit | currency:'THB':'symbol':'1.2-2' }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

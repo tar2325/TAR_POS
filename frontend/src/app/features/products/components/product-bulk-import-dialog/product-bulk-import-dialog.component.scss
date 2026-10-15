@@ -1,0 +1,42 @@
+@use 'styles/tokens' as *;
+
+h2[mat-dialog-title] {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  margin: 0;
+
+  mat-icon { color: $color-primary; }
+}
+
+.bulk-import {
+  min-width: min(560px, 90vw);
+
+  &__hint {
+    margin: 0 0 $space-md;
+    color: $color-text-muted;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  &__preview {
+    margin: 0;
+    color: $color-success;
+    font-weight: $font-weight-title;
+  }
+
+  &__errors {
+    margin-top: $space-sm;
+    padding: $space-sm $space-md;
+    border-radius: $radius-sm;
+    background: rgba($color-danger, 0.08);
+
+    p {
+      margin: 0 0 4px;
+      font-size: 13px;
+      color: $color-danger;
+
+      &:last-child { margin-bottom: 0; }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+<div class="main-layout" [class.main-layout--mobile-open]="isMobileMenuOpen()">
+  <app-sidebar
+    [collapsed]="sidebarCollapsed()"
+    [mobileOpen]="isMobileMenuOpen()"
+    [items]="navItems()"
+    (linkClick)="closeMobileMenu()"
+  />
+  @if (isMobileMenuOpen()) {
+    <div class="main-layout__backdrop" (click)="closeMobileMenu()"></div>
+  }
+  <div class="main-layout__body">
+    <app-header [cashierName]="cashierName()" (toggleSidebar)="toggleSidebar()" (logout)="logout()" />
+    <main class="main-layout__content"><router-outlet /></main>
+  </div>
+</div>

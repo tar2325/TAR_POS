@@ -1,0 +1,259 @@
+<app-page-header [title]="pageTitle()" [breadcrumbs]="breadcrumbs()" />
+
+<div class="page-content">
+  <!-- Online Barcode Lookup Section -->
+  <div class="lookup-card">
+    <div class="lookup-card__header">
+      <div class="lookup-card__title">
+        <mat-icon class="icon-pulse">travel_explore</mat-icon>
+        <div>
+          <h3>ค้นหาข้อมูลสินค้าออนไลน์จากบาร์โค้ด</h3>
+          <p>สแกนบาร์โค้ดหรือพิมพ์เลขรหัส (ระบบจะดึงชื่อ แบรนด์ ขนาด และรูปภาพจาก Open Food Facts, UPCitemdb และแคชอัตโนมัติ)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lookup-input-bar">
+      <div class="lookup-field">
+        <mat-icon class="lookup-field__icon">barcode_scanner</mat-icon>
+        <input
+          type="text"
+          class="lookup-field__input"
+          placeholder="สแกนบาร์โค้ด หรือพิมพ์เลข 8-14 หลัก (เช่น 8851234567890)..."
+          [value]="lookupCode()"
+          (input)="lookupCode.set($any($event.target).value)"
+          (keyup.enter)="searchBarcodeOnline()"
+        />
+        @if (lookupCode()) {
+          <button type="button" class="btn-clear" (click)="lookupCode.set('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <button
+        type="button"
+        mat-flat-button
+        color="primary"
+        class="btn-search"
+        [disabled]="isSearchingOnline() || lookupCode().length < 8"
+        (click)="searchBarcodeOnline()"
+      >
+        <span class="btn-inner">
+          @if (isSearchingOnline()) {
+            <span class="spinner"></span>
+            <span>กำลังค้นหา...</span>
+          } @else {
+            <mat-icon>search</mat-icon>
+            <span>ค้นหาออนไลน์</span>
+          }
+        </span>
+      </button>
+    </div>
+
+    <!-- Lookup Results Display -->
+    @if (lookupResult(); as res) {
+      <div class="lookup-result-box" [attr.data-status]="res.status">
+        <!-- Case FOUND -->
+        @if (res.status === 'FOUND' && res.suggestion; as sug) {
+          <div class="suggestion-card">
+            <div class="suggestion-card__media">
+              @if (sug.imageUrl) {
+                <img [src]="sug.imageUrl" [alt]="sug.name" class="product-thumb" />
+              } @else {
+                <div class="product-thumb placeholder">
+                  <mat-icon>image_not_supported</mat-icon>
+                </div>
+              }
+            </div>
+
+            <div class="suggestion-card__info">
+              <div class="badge-row">
+                <span class="badge badge--success">
+                  <mat-icon>verified</mat-icon> พบข้อมูลสินค้า
+                </span>
+                <span class="badge badge--origin">
+                  <mat-icon>flag</mat-icon> {{ res.originCountry || 'สากล' }}
+                </span>
+                <span class="badge badge--source">แหล่ง: {{ sug.source }}</span>
+                <span class="badge badge--confidence">ความมั่นใจ {{ sug.confidence }}%</span>
+              </div>
+
+              <h4 class="suggestion-title">{{ sug.name }}</h4>
+
+              <div class="suggestion-meta">
+                @if (sug.brand) {
+                  <span><strong>แบรนด์:</strong> {{ sug.brand }}</span>
+                }
+                @if (sug.quantity) {
+                  <span><strong>ขนาด:</strong> {{ sug.quantity }}</span>
+                }
+                <span><strong>บาร์โค้ด:</strong> {{ sug.barcode }}</span>
+              </div>
+
+              <div class="suggestion-actions">
+                <button type="button" mat-flat-button color="primary" class="btn-apply" (click)="applySuggestion()">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>นำข้อมูลเข้าฟอร์มทันที</span>
+                </button>
+                <button type="button" mat-stroked-button (click)="searchBarcodeOnline(sug.barcode, true)">
+                  <mat-icon>refresh</mat-icon> ค้นหาใหม่
+                </button>
+                <button type="button" mat-button (click)="clearLookup()">ปิด</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Case LOCAL (Already in Store) -->
+        @if (res.status === 'LOCAL') {
+          <div class="alert-box alert--info">
+            <mat-icon>info</mat-icon>
+            <div class="alert-box__content">
+              <strong>พบสินค้านี้ในระบบแล้ว</strong>
+              <p>{{ res.message }} (บาร์โค้ด: {{ res.barcode }})</p>
+            </div>
+            <button type="button" mat-button (click)="clearLookup()">ปิด</button>
+          </div>
+        }
+
+        <!-- Case IN_STORE -->
+        @if (res.status === 'IN_STORE') {
+          <div class="alert-box alert--info">
+            <mat-icon>store</mat-icon>
+            <div class="alert-box__content">
+              <strong>บาร์โค้ดภายในร้าน</strong>
+              <p>{{ res.message }}</p>
+            </div>
+            <button type="button" mat-flat-button color="primary" (click)="form.patchValue({ barcode: res.barcode }); autoBarcode.set(false); clearLookup()">
+              ใช้รหัสนี้ในฟอร์ม
+            </button>
+          </div>
+        }
+
+        <!-- Case NOT_FOUND -->
+        @if (res.status === 'NOT_FOUND') {
+          <div class="alert-box alert--warning">
+            <mat-icon>search_off</mat-icon>
+            <div class="alert-box__content">
+              <strong>ไม่พบข้อมูลในฐานข้อมูลออนไลน์</strong>
+              <p>{{ res.message }}</p>
+              @if (res.retailerLinks && res.retailerLinks.length > 0) {
+                <div class="retailer-links">
+                  <span>ค้นหาดูรายละเอียดจากร้านค้าปลีกไทย:</span>
+                  <div class="link-chips">
+                    @for (r of res.retailerLinks; track r.id) {
+                      <a href="javascript:void(0)" class="chip-link" (click)="openRetailer(r.url)">
+                        <mat-icon>open_in_new</mat-icon> {{ r.name }}
+                      </a>
+                    }
+                  </div>
+                </div>
+              }
+              <small class="hint-text">* คุณสามารถกรอกชื่อและราคาด้านล่างได้ทันที เมื่อกดบันทึก ระบบจะจดจำไว้ในแคชสำหรับครั้งถัดไป</small>
+            </div>
+            <button type="button" mat-flat-button color="primary" (click)="form.patchValue({ barcode: res.barcode }); autoBarcode.set(false); clearLookup()">
+              ใช้รหัสนี้กรอกเอง
+            </button>
+          </div>
+        }
+
+        <!-- Case INVALID -->
+        @if (res.status === 'INVALID') {
+          <div class="alert-box alert--danger">
+            <mat-icon>error_outline</mat-icon>
+            <div class="alert-box__content">
+              <strong>รหัสบาร์โค้ดไม่ถูกต้อง</strong>
+              <p>{{ res.message }}</p>
+            </div>
+            <button type="button" mat-button (click)="clearLookup()">ปิด</button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Main Product Edit Form -->
+  <form class="form-card" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-note">
+      <mat-icon>edit_note</mat-icon>
+      <span>รายละเอียดข้อมูลสินค้าในระบบร้าน</span>
+    </div>
+
+    <div class="barcode-row">
+      <mat-form-field appearance="outline" class="barcode-row__input">
+        <mat-label>บาร์โค้ดสินค้า (สำหรับสแกนเนอร์)</mat-label>
+        <input
+          matInput
+          formControlName="barcode"
+          [readonly]="autoBarcode()"
+          placeholder="8850114903054"
+        />
+        <mat-hint>รองรับทั้งบาร์โค้ดไทย GS1 (885) และบาร์โค้ดสากล</mat-hint>
+      </mat-form-field>
+
+      <mat-checkbox [checked]="autoBarcode()" (change)="toggleAutoBarcode($event.checked)">
+        สร้างบาร์โค้ดภายในอัตโนมัติ
+      </mat-checkbox>
+    </div>
+
+    <div class="form-grid">
+      <app-image-upload formControlName="imageUrl" />
+
+      <mat-form-field appearance="outline">
+        <mat-label>SKU / รหัสสินค้า</mat-label>
+        <input matInput formControlName="sku" placeholder="เช่น P001" />
+      </mat-form-field>
+
+      <button mat-stroked-button type="button" class="sku-regen" (click)="regenerateBarcode()">
+        <mat-icon>qr_code_2</mat-icon>
+        สร้างบาร์โค้ดจาก SKU
+      </button>
+
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>ชื่อสินค้า</mat-label>
+        <input matInput formControlName="name" placeholder="เช่น น้ำดื่มสิงห์ 600 มล." />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>หมวดหมู่</mat-label>
+        <mat-select formControlName="categoryId">
+          @for (category of categories(); track category.id) {
+            <mat-option [value]="category.id">{{ category.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>ราคาขาย (บาท)</mat-label>
+        <input matInput type="number" formControlName="price" min="0" step="0.5" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>ราคาทุน (บาท)</mat-label>
+        <input matInput type="number" formControlName="costPrice" min="0" step="0.5" />
+        <mat-hint>ต้นทุนต่อชิ้นเพื่อคำนวณกำไร</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>สต็อกเริ่มต้น</mat-label>
+        <input matInput type="number" formControlName="stock" min="0" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>สต็อกแจ้งเตือนขั้นต่ำ</mat-label>
+        <input matInput type="number" formControlName="minStock" min="0" />
+      </mat-form-field>
+
+      <mat-checkbox formControlName="active">เปิดใช้งาน (พร้อมขาย)</mat-checkbox>
+    </div>
+
+    <div class="form-actions">
+      <a mat-stroked-button routerLink="/products">ยกเลิก</a>
+      <button mat-flat-button color="primary" type="submit">
+        <mat-icon>save</mat-icon>
+        <span>บันทึกข้อมูลสินค้า</span>
+      </button>
+    </div>
+  </form>
+</div>

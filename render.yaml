@@ -1,0 +1,45 @@
+# Render Blueprint: Automatic Full-Stack Deployment
+# Free Database + Free Spring Boot API + Free Angular Web App
+services:
+  # 1. Backend Spring Boot 3 API
+  - type: web
+    name: pos-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: singapore
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: pos-db
+          property: connectionString
+      - key: APP_JWT_SECRET
+        generateValue: true
+
+  # 2. Frontend Angular Web App
+  - type: web
+    name: pos-frontend
+    runtime: static
+    plan: free
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist/pos-frontend/browser
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://pos-backend.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# 3. PostgreSQL Database (Free Managed Postgres)
+databases:
+  - name: pos-db
+    plan: free
+    region: singapore
+    databaseName: pos_db
+    user: pos_user

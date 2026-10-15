@@ -1,0 +1,87 @@
+<section class="cart-panel">
+
+  <header class="cart-panel__header">
+    <div class="cart-panel__title">
+      <mat-icon>shopping_cart</mat-icon>
+      <h2>ตะกร้า</h2>
+    </div>
+    @if (items().length > 0) {
+      <span class="cart-panel__count">{{ summary().itemCount }}</span>
+    }
+  </header>
+
+  <div class="cart-panel__items">
+    @if (items().length === 0) {
+      <div class="cart-panel__empty">
+        <div class="cart-panel__empty-icon">
+          <mat-icon>qr_code_scanner</mat-icon>
+        </div>
+        <p>สแกนบาร์โค้ดหรือแตะสินค้า</p>
+        <span>รายการจะแสดงที่นี่</span>
+      </div>
+    } @else {
+      @for (item of items(); track item.product.id) {
+        <article class="cart-item">
+          <div class="cart-item__main">
+            <div class="cart-item__info">
+              <strong>{{ item.product.name }}</strong>
+              <span>{{ item.product.price | currency:'THB':'symbol':'1.2-2':'th' }} / ชิ้น</span>
+            </div>
+            <div class="cart-item__line-total">
+              {{ item.product.price * item.quantity | currency: 'THB' : 'symbol' : '1.2-2' : 'th' }}
+            </div>
+          </div>
+          <div class="cart-item__actions">
+            <button mat-icon-button type="button" class="qty-btn" (click)="decrease.emit(item.product.id)">
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="cart-item__qty">{{ item.quantity }}</span>
+            <button mat-icon-button type="button" class="qty-btn" (click)="increase.emit(item.product.id)">
+              <mat-icon>add</mat-icon>
+            </button>
+            <button mat-icon-button type="button" class="cart-item__remove" (click)="remove.emit(item.product.id)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </article>
+      }
+    }
+  </div>
+
+  <footer class="cart-panel__footer">
+    <div class="cart-panel__total-block">
+      <div class="cart-panel__total-row">
+        <span>จำนวนรวม</span>
+        <span>{{ summary().itemCount }} ชิ้น</span>
+      </div>
+      <div class="cart-panel__total-row cart-panel__total-row--grand">
+        <span>ยอดสุทธิ</span>
+        <strong>{{ summary().total | currency: 'THB' : 'symbol' : '1.2-2' : 'th' }}</strong>
+      </div>
+    </div>
+
+    <div class="cart-panel__actions">
+      <button
+        mat-stroked-button
+        type="button"
+        class="cart-panel__clear"
+        [disabled]="items().length === 0"
+        (click)="clear.emit()"
+      >
+        <mat-icon>delete_sweep</mat-icon>
+        ล้าง
+      </button>
+
+      <button
+        mat-flat-button
+        type="button"
+        class="cart-panel__checkout"
+        [disabled]="items().length === 0"
+        (click)="checkout.emit()"
+      >
+        <mat-icon>payments</mat-icon>
+        ชำระเงิน
+      </button>
+    </div>
+  </footer>
+</section>
