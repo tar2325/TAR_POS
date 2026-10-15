@@ -83,3 +83,26 @@ project _pos/
         ├── app/
         └── environments/
 ```
+
+---
+
+## ☁️ การนำขึ้น Cloud (Render Deployment)
+
+โปรเจกต์นี้รองรับการ Deploy ขึ้น **Render.com** (Free Tier):
+
+### ตัวเลือกที่ 1: Deploy ผ่าน Blueprint (แนะนำ - ง่ายที่สุด)
+1. ใน Render Dashboard กด **New +** -> **Blueprint**
+2. เลือก Repository นี้ -> Render จะอ่าน [`render.yaml`](file:///d:/project%20_pos/render.yaml) และสร้าง Database (`pos-db`), Backend API (`pos-backend`), และ Frontend (`pos-frontend`) ให้โดยอัตโนมัติ 100%
+
+### ตัวเลือกที่ 2: ติดตั้งแบบแยก Service ด้วยตนเอง (Manual)
+1. **สร้าง PostgreSQL Database**:
+   - กด **New +** -> **PostgreSQL** (ชื่อ: `pos-db`, Database: `pos_db`, Region: Singapore, Plan: Free)
+   - คัดลอก **Internal Database URL** (เช่น `postgres://pos_user:...@dpg-.../pos_db`)
+2. **สร้าง Web Service สำหรับ Backend**:
+   - กด **New +** -> **Web Service** เชื่อมต่อ GitHub repo
+   - เลือก Runtime: **Docker** (Dockerfile path: `backend/Dockerfile`, Context: `backend`)
+   - ไปที่แท็บ **Environment** แล้วเพิ่มตัวแปร:
+     - `SPRING_DATASOURCE_URL`: *(วาง Internal Database URL จากข้อ 1)*
+     - `APP_JWT_SECRET`: *(กำหนดรหัสผ่านสุ่ม >= 32 ตัวอักษร)*
+     - *(หรือตั้งค่า `ALLOW_IN_MEMORY_DB=true` หากต้องการทดสอบระบบแบบ Demo โดยยังไม่ต่อ Postgres)*
+
