@@ -21,7 +21,7 @@ import java.net.URI;
 @Slf4j
 public class DatabaseConfig {
 
-    @Value("${spring.datasource.url:${DATABASE_URL:}}")
+    @Value("${spring.datasource.url:${DATABASE_URL:${INTERNAL_DATABASE_URL:${POSTGRES_URL:}}}}")
     private String rawUrl;
 
     @Value("${spring.datasource.username:}")
@@ -34,6 +34,17 @@ public class DatabaseConfig {
     @Primary
     @ConditionalOnProperty(name = "spring.datasource.url")
     public DataSource dataSource() {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            log.error("==========================================================================================");
+            log.error("CRITICAL ERROR: No database connection URL provided!");
+            log.error("Please add the environment variable 'SPRING_DATASOURCE_URL' in your Render Web Service.");
+            log.error("Value should be your PostgreSQL Internal Database URL (e.g. postgres://pos_user:...@dpg-.../pos_db)");
+            log.error("==========================================================================================");
+            throw new IllegalStateException(
+                    "Missing environment variable: 'SPRING_DATASOURCE_URL'. " +
+                    "Please configure it in Render Dashboard -> pos-backend -> Environment.");
+        }
+
         HikariConfig config = new HikariConfig();
         
         // Conservative pool sizing for 512MB RAM cloud environments
@@ -43,48 +54,45 @@ public class DatabaseConfig {
         config.setInitializationFailTimeout(60000);
         config.setLeakDetectionThreshold(20000);
 
-        if (rawUrl != null && !rawUrl.isBlank()) {
-            String trimmedUrl = rawUrl.trim();
-            // If URL is in standard cloud postgres:// format without jdbc: prefix
-            if (trimmedUrl.startsWith("postgres://") || trimmedUrl.startsWith("postgresql://")) {
-                try {
-                    String httpAdapted = trimmedUrl.replaceFirst("^postgres(ql)?://", "http://");
-                    URI uri = new URI(httpAdapted);
-                    String host = uri.getHost();
-                    int port = uri.getPort() == -1 ? 5432 : uri.getPort();
-                    String path = uri.getPath();
-                    String query = uri.getQuery();
-                    
-                    String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path;
-                    if (query != null && !query.isBlank()) {
-                        jdbcUrl += "?" + query;
-                    } else {
-                        jdbcUrl += "?sslmode=prefer";
-                    }
-
-                    config.setJdbcUrl(jdbcUrl);
-
-                    String userInfo = uri.getUserInfo();
-                    if (userInfo != null && userInfo.contains(":")) {
-                        String[] parts = userInfo.split(":", 2);
-                        config.setUsername(parts[0]);
-                        config.setPassword(parts[1]);
-                    } else if (defaultUsername != null && !defaultUsername.isBlank()) {
-                        config.setUsername(defaultUsername);
-                        config.setPassword(defaultPassword);
-                    }
-
-                    config.setDriverClassName("org.postgresql.Driver");
-                    log.info("Initialized Cloud DataSource with JDBC URL: {}", jdbcUrl);
-                    return new HikariDataSource(config);
-                } catch (Exception e) {
-                    log.warn("Could not parse cloud URL as URI ({}), falling back to direct string", trimmedUrl, e);
+        String trimmedUrl = rawUrl.trim();
+        // If URL is in standard cloud postgres:// format without jdbc: prefix
+        if (trimmedUrl.startsWith("postgres://") || trimmedUrl.startsWith("postgresql://")) {
+            try {
+                String httpAdapted = trimmedUrl.replaceFirst("^postgres(ql)?://", "http://");
+                URI uri = new URI(httpAdapted);
+                String host = uri.getHost();
+                int port = uri.getPort() == -1 ? 5432 : uri.getPort();
+                String path = uri.getPath();
+                String query = uri.getQuery();
+                
+                String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path;
+                if (query != null && !query.isBlank()) {
+                    jdbcUrl += "?" + query;
+                } else {
+                    jdbcUrl += "?sslmode=prefer";
                 }
-            }
 
-            config.setJdbcUrl(trimmedUrl);
+                config.setJdbcUrl(jdbcUrl);
+
+                String userInfo = uri.getUserInfo();
+                if (userInfo != null && userInfo.contains(":")) {
+                    String[] parts = userInfo.split(":", 2);
+                    config.setUsername(parts[0]);
+                    config.setPassword(parts[1]);
+                } else if (defaultUsername != null && !defaultUsername.isBlank()) {
+                    config.setUsername(defaultUsername);
+                    config.setPassword(defaultPassword);
+                }
+
+                config.setDriverClassName("org.postgresql.Driver");
+                log.info("Initialized Cloud DataSource with JDBC URL: {}", jdbcUrl);
+                return new HikariDataSource(config);
+            } catch (Exception e) {
+                log.warn("Could not parse cloud URL as URI ({}), falling back to direct string", trimmedUrl, e);
+            }
         }
 
+        config.setJdbcUrl(trimmedUrl);
         if (defaultUsername != null && !defaultUsername.isBlank()) {
             config.setUsername(defaultUsername);
             config.setPassword(defaultPassword);
