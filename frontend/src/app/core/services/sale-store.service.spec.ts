@@ -34,6 +34,7 @@ describe('SaleStoreService', () => {
     const receipt: ReceiptData = {
       receiptNo: 'REC-TEST-001',
       createdAt: new Date(),
+      cashierName: 'สมชาย',
       items: [
         {
           product: { ...testProduct },
@@ -46,11 +47,6 @@ describe('SaleStoreService', () => {
         tax: 0,
         total: unitPrice * saleQty,
         itemCount: saleQty,
-      },
-      payment: {
-        method: 'CASH',
-        receivedAmount: unitPrice * saleQty,
-        changeAmount: 0,
       },
     };
 

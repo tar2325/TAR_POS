@@ -44,9 +44,9 @@ if (-not $SkipBackend) {
     Push-Location $backendDir
     try {
       if (Test-Path ".\mvnw.cmd") {
-        & .\mvnw.cmd test -Dspring.profiles.active=test
+        & .\mvnw.cmd clean test
       } elseif (Get-Command mvn -ErrorAction SilentlyContinue) {
-        mvn test -Dspring.profiles.active=test
+        mvn clean test
       } else {
         Write-Host "ERROR: Neither mvnw.cmd nor mvn found in PATH." -ForegroundColor Red
         $backendSuccess = $false

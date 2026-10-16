@@ -20,6 +20,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsBySkuIgnoreCase(String sku);
 
+    Optional<Product> findBySkuIgnoreCase(String sku);
+
     boolean existsByCategoryId(Long categoryId);
 
     List<Product> findByCategoryId(Long categoryId);

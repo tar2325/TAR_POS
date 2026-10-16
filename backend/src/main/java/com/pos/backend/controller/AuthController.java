@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,5 +36,17 @@ public class AuthController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                         "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"));
         return new AuthDtos.LoginResponse(jwt.issue(user), "", AuthDtos.UserDto.from(user));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current authenticated user profile")
+    public AuthDtos.UserDto me(org.springframework.security.core.Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ไม่ได้เข้าสู่ระบบ");
+        }
+        AppUser user = users.findByUsername(auth.getName())
+                .filter(AppUser::getActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ไม่พบข้อมูลผู้ใช้"));
+        return AuthDtos.UserDto.from(user);
     }
 }

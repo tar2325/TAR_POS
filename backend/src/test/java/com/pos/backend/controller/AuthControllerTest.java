@@ -5,6 +5,7 @@ import com.pos.backend.dto.AuthDtos;
 import com.pos.backend.model.AppUser;
 import com.pos.backend.model.UserRole;
 import com.pos.backend.repository.AppUserRepository;
+import com.pos.backend.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -37,18 +39,23 @@ class AuthControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtService jwtService;
+
+    private AppUser testUser;
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
 
-        AppUser user = AppUser.builder()
+        testUser = AppUser.builder()
                 .username("testadmin")
                 .passwordHash(passwordEncoder.encode("secret123"))
                 .displayName("Test Admin")
                 .role(UserRole.ADMIN)
                 .active(true)
                 .build();
-        userRepository.save(user);
+        testUser = userRepository.save(testUser);
     }
 
     @Test
@@ -96,5 +103,25 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /auth/me with valid Bearer token returns current user profile")
+    void shouldReturnCurrentUserProfileWhenAuthenticated() throws Exception {
+        String token = jwtService.issue(testUser);
+
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username", is("testadmin")))
+                .andExpect(jsonPath("$.displayName", is("Test Admin")))
+                .andExpect(jsonPath("$.role", is("ADMIN")));
+    }
+
+    @Test
+    @DisplayName("GET /auth/me without token returns 401 Unauthorized")
+    void shouldReturnUnauthorizedWhenNoToken() throws Exception {
+        mockMvc.perform(get("/auth/me"))
+                .andExpect(status().isUnauthorized());
     }
 }

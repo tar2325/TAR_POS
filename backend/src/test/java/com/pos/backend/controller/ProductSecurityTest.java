@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,6 +70,38 @@ class ProductSecurityTest {
                         .header("Authorization", "Bearer " + cashierToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /products/bulk with CASHIER role returns 403 Forbidden")
+    void shouldDenyBulkProductCreationForCashier() throws Exception {
+        AppUser cashier = AppUser.builder()
+                .id(99L)
+                .username("cashier_user")
+                .role(UserRole.CASHIER)
+                .build();
+        String cashierToken = jwtService.issue(cashier);
+
+        com.pos.backend.dto.ProductDtos.BulkImportRequest bulkReq =
+                new com.pos.backend.dto.ProductDtos.BulkImportRequest(
+                        1L,
+                        List.of(new com.pos.backend.dto.ProductDtos.BulkProductRow(
+                                "SKU-BULK-01",
+                                "885000000099",
+                                "Bulk Product",
+                                "General",
+                                BigDecimal.valueOf(50.0),
+                                BigDecimal.valueOf(30.0),
+                                10,
+                                2
+                        ))
+                );
+
+        mockMvc.perform(post("/products/bulk")
+                        .header("Authorization", "Bearer " + cashierToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bulkReq)))
                 .andExpect(status().isForbidden());
     }
 }

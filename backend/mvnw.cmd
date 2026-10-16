@@ -36,6 +36,7 @@ set ERROR_CODE=0
 set "DIRNAME=%~dp0"
 if "%DIRNAME%" == "" set "DIRNAME=."
 set "MAVEN_PROJECTBASEDIR=%DIRNAME%"
+if "%MAVEN_PROJECTBASEDIR:~-1%"=="\" set "MAVEN_PROJECTBASEDIR=%MAVEN_PROJECTBASEDIR:~0,-1%"
 
 if not "%JAVA_HOME%" == "" goto OkJHome
 

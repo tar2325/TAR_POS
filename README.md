@@ -129,6 +129,7 @@ cd backend
 - `StockServiceTest`: ตรวจสอบตรรกะการตัดสต็อก, Ledger movement, และ Oversell prevention
 - `AuthControllerTest`: ตรวจสอบการ Login, Validation, และ Authentication Filter
 - `ProductSecurityTest`: ตรวจสอบ Role-based Access Control (401 สำหรับผู้ไม่ได้ล็อกอิน และ 403 สำหรับ Cashier แก้ไขสินค้า)
+- `SaleControllerTest`: ตรวจสอบการบันทึกบิลขาย (Checkout), การหักสต็อกสินค้าอัตโนมัติ, การคำนวณกำไร, และรายงานสรุปยอดขายตามช่วงเวลา
 
 ### รันเฉพาะ Frontend Tests
 ```powershell

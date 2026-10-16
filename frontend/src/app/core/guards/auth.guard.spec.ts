@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, Router, UrlTree } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { authGuard } from './auth.guard';
 import { roleGuard } from './role.guard';
 import { AuthService } from '../services/auth.service';
@@ -15,8 +16,10 @@ describe('Auth Guards', () => {
     TestBed.configureTestingModule({
       providers: [
         AuthService,
-        provideHttpClient(),
-        provideRouter([]),
+        provideRouter([
+          { path: 'login', children: [] },
+          { path: 'dashboard', children: [] },
+        ]),
       ],
     });
 
@@ -35,12 +38,10 @@ describe('Auth Guards', () => {
       expect((result as UrlTree).toString()).toBe('/login');
     });
 
-    it('should allow access when authenticated', (done) => {
-      authService.login({ username: 'admin', password: 'password123' }).subscribe(() => {
-        const result = TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
-        expect(result).toBe(true);
-        done();
-      });
+    it('should allow access when authenticated', async () => {
+      await firstValueFrom(authService.login({ username: 'admin', password: 'admin123' }));
+      const result = TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
+      expect(result).toBe(true);
     });
   });
 
@@ -52,23 +53,19 @@ describe('Auth Guards', () => {
       expect((result as UrlTree).toString()).toBe('/login');
     });
 
-    it('should allow user with matching role', (done) => {
-      authService.login({ username: 'admin', password: 'password123' }).subscribe(() => {
-        const guardFn = roleGuard(['ADMIN', 'MANAGER']);
-        const result = TestBed.runInInjectionContext(() => guardFn({} as any, {} as any));
-        expect(result).toBe(true);
-        done();
-      });
+    it('should allow user with matching role', async () => {
+      await firstValueFrom(authService.login({ username: 'admin', password: 'admin123' }));
+      const guardFn = roleGuard(['ADMIN', 'MANAGER']);
+      const result = TestBed.runInInjectionContext(() => guardFn({} as any, {} as any));
+      expect(result).toBe(true);
     });
 
-    it('should redirect user without required role to /dashboard', (done) => {
-      authService.login({ username: 'cashier', password: 'password123' }).subscribe(() => {
-        const guardFn = roleGuard(['ADMIN', 'MANAGER']);
-        const result = TestBed.runInInjectionContext(() => guardFn({} as any, {} as any));
-        expect(result instanceof UrlTree).toBe(true);
-        expect((result as UrlTree).toString()).toBe('/dashboard');
-        done();
-      });
+    it('should redirect user without required role to /dashboard', async () => {
+      await firstValueFrom(authService.login({ username: 'cashier', password: 'cashier123' }));
+      const guardFn = roleGuard(['ADMIN', 'MANAGER']);
+      const result = TestBed.runInInjectionContext(() => guardFn({} as any, {} as any));
+      expect(result instanceof UrlTree).toBe(true);
+      expect((result as UrlTree).toString()).toBe('/dashboard');
     });
   });
 });

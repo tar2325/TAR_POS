@@ -99,7 +99,7 @@ describe('ProductStoreService', () => {
       const initialStock = first.stock;
 
       const updated = service.adjustStock(
-        { productId: first.id, quantity: 10, type: 'MANUAL_IN', note: 'รับของเพิ่ม' },
+        { productId: first.id, quantity: 10, type: 'RECEIVE', note: 'รับของเพิ่ม' },
         'ผู้จัดการ',
       );
 
@@ -108,7 +108,7 @@ describe('ProductStoreService', () => {
 
       const movements = service.movementList();
       expect(movements.length).toBeGreaterThan(0);
-      expect(movements[0].type).toBe('MANUAL_IN');
+      expect(movements[0].type).toBe('RECEIVE');
       expect(movements[0].quantity).toBe(10);
       expect(movements[0].stockBefore).toBe(initialStock);
       expect(movements[0].stockAfter).toBe(initialStock + 10);
@@ -143,7 +143,7 @@ describe('ProductStoreService', () => {
     it('should return undefined when quantity is 0', () => {
       const first = service.getProducts()[0];
       const result = service.adjustStock(
-        { productId: first.id, quantity: 0, type: 'MANUAL_IN' },
+        { productId: first.id, quantity: 0, type: 'RECEIVE' },
         'แคชเชียร์ A',
       );
       expect(result).toBeUndefined();

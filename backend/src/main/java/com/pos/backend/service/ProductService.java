@@ -1,6 +1,8 @@
 package com.pos.backend.service;
 
 import com.pos.backend.dto.BarcodeDto;
+import com.pos.backend.dto.CategoryDtos;
+import com.pos.backend.dto.ProductDtos;
 import com.pos.backend.dto.ProductRequest;
 import com.pos.backend.dto.ProductResponse;
 import com.pos.backend.exception.BusinessException;
@@ -93,6 +95,72 @@ public class ProductService {
         }
         learnToCache(p);
         return ProductResponse.from(p);
+    }
+
+    @Transactional
+    public ProductDtos.BulkImportResponse bulkCreate(ProductDtos.BulkImportRequest r, String username) {
+        List<String> errors = new ArrayList<>();
+        List<ProductResponse> createdProducts = new ArrayList<>();
+        int lineNum = 1;
+
+        if (r.rows() != null) {
+            for (ProductDtos.BulkProductRow row : r.rows()) {
+                try {
+                    if (row.sku() == null || row.sku().isBlank()) {
+                        errors.add("บรรทัด " + lineNum + ": ไม่ระบุ SKU");
+                        lineNum++;
+                        continue;
+                    }
+                    String sku = row.sku().trim();
+                    if (productRepository.existsBySkuIgnoreCase(sku)) {
+                        errors.add("บรรทัด " + lineNum + ": SKU \"" + sku + "\" ซ้ำ");
+                        lineNum++;
+                        continue;
+                    }
+                    if (row.name() == null || row.name().isBlank()) {
+                        errors.add("บรรทัด " + lineNum + ": ไม่ระบุชื่อสินค้า");
+                        lineNum++;
+                        continue;
+                    }
+
+                    Long categoryId = r.defaultCategoryId();
+                    if (row.categoryName() != null && !row.categoryName().isBlank()) {
+                        categoryId = categoryService.list().stream()
+                                .filter(c -> c.name().equalsIgnoreCase(row.categoryName().trim()))
+                                .map(CategoryDtos.Response::id)
+                                .findFirst()
+                                .orElse(r.defaultCategoryId());
+                    }
+
+                    if (categoryId == null) {
+                        errors.add("บรรทัด " + lineNum + ": ไม่พบหมวดหมู่และไม่ได้เลือกหมวดหมู่เริ่มต้น");
+                        lineNum++;
+                        continue;
+                    }
+
+                    ProductRequest req = new ProductRequest(
+                            sku,
+                            row.barcode() != null ? row.barcode().trim() : "",
+                            row.name().trim(),
+                            row.price() != null ? row.price() : BigDecimal.ZERO,
+                            row.costPrice() != null ? row.costPrice() : BigDecimal.ZERO,
+                            categoryId,
+                            null,
+                            row.stock() != null ? row.stock() : 0,
+                            row.minStock() != null ? row.minStock() : 10,
+                            true,
+                            List.of()
+                    );
+                    ProductResponse created = this.create(req, username);
+                    createdProducts.add(created);
+                } catch (Exception e) {
+                    errors.add("บรรทัด " + lineNum + ": " + e.getMessage());
+                }
+                lineNum++;
+            }
+        }
+
+        return new ProductDtos.BulkImportResponse(createdProducts.size(), errors, createdProducts);
     }
 
     @Transactional

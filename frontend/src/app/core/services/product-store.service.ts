@@ -1,4 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { MOCK_PRODUCTS } from '../data/product-mock.data';
 import { generateBarcodeFromSku, ParsedBulkProductRow, suggestNextSku } from '../utils/barcode.util';
 import { StockAdjustRequest, StockMovement } from '../../models/inventory.model';
@@ -12,6 +14,7 @@ export interface BulkCreateProductsResult {
 
 @Injectable({ providedIn: 'root' })
 export class ProductStoreService {
+  private readonly http = inject(HttpClient, { optional: true });
   private readonly categoryStore = inject(CategoryStoreService);
   private readonly products = signal<Product[]>(MOCK_PRODUCTS.map((item) => ({ ...item })));
   private readonly movements = signal<StockMovement[]>([]);
@@ -25,6 +28,44 @@ export class ProductStoreService {
   readonly lowStockProducts = computed(() =>
     this.products().filter((product) => product.active && product.stock <= product.minStock),
   );
+
+  constructor() {
+    this.loadProducts();
+    this.loadMovements();
+  }
+
+  loadProducts(): void {
+    if (typeof window === 'undefined' || !this.http) return;
+    this.http.get<Product[]>(`${environment.apiUrl}/products`).subscribe({
+      next: (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          this.products.set(
+            data.map((p) => ({
+              ...p,
+              costPrice: p.costPrice ?? 0,
+            })),
+          );
+        }
+      },
+      error: (err) => {
+        console.warn('Failed to load products from API, using fallback data:', err?.message || err);
+      },
+    });
+  }
+
+  loadMovements(): void {
+    if (typeof window === 'undefined' || !this.http) return;
+    this.http.get<StockMovement[]>(`${environment.apiUrl}/stock/movements`).subscribe({
+      next: (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          this.movements.set(data);
+        }
+      },
+      error: (err) => {
+        console.warn('Failed to load stock movements from API:', err?.message || err);
+      },
+    });
+  }
 
   getProducts(): Product[] {
     return [...this.products()];
@@ -80,6 +121,29 @@ export class ProductStoreService {
     const normalized = this.normalizePayload(payload, id);
     const product: Product = { id, ...normalized };
     this.products.update((items) => [...items, product]);
+
+    if (this.http) {
+      this.http.post<Product>(`${environment.apiUrl}/products`, {
+        sku: product.sku,
+        barcode: product.barcode,
+        name: product.name,
+        price: product.price,
+        costPrice: product.costPrice ?? 0,
+        categoryId: product.categoryId,
+        imageUrl: product.imageUrl,
+        stock: product.stock,
+        minStock: product.minStock,
+        active: product.active,
+      }).subscribe({
+        next: (created) => {
+          this.products.update((items) =>
+            items.map((it) => (it.id === product.id ? { ...it, id: created.id } : it)),
+          );
+        },
+        error: (err) => console.error('Failed to create product on API:', err),
+      });
+    }
+
     return product;
   }
 
@@ -95,6 +159,24 @@ export class ProductStoreService {
         return updated;
       }),
     );
+
+    if (this.http && updated) {
+      this.http.put<Product>(`${environment.apiUrl}/products/${id}`, {
+        sku: updated.sku,
+        barcode: updated.barcode,
+        name: updated.name,
+        price: updated.price,
+        costPrice: updated.costPrice ?? 0,
+        categoryId: updated.categoryId,
+        imageUrl: updated.imageUrl,
+        stock: updated.stock,
+        minStock: updated.minStock,
+        active: updated.active,
+      }).subscribe({
+        error: (err) => console.error('Failed to update product on API:', err),
+      });
+    }
+
     return updated;
   }
 
@@ -143,6 +225,22 @@ export class ProductStoreService {
           `บรรทัด ${row.line}: ${error instanceof Error ? error.message : 'เพิ่มสินค้าไม่สำเร็จ'}`,
         );
       }
+    }
+
+    if (this.http && rows.length > 0) {
+      this.http.post<{ created: number; errors: string[] }>(`${environment.apiUrl}/products/bulk`, {
+        defaultCategoryId,
+        rows: rows.map((r) => ({
+          sku: r.sku,
+          name: r.name,
+          categoryName: r.categoryName,
+          stock: r.stock,
+          price: r.price,
+        })),
+      }).subscribe({
+        next: () => this.loadProducts(),
+        error: (err) => console.error('Failed to sync bulk import to API:', err),
+      });
     }
 
     return { created, errors };
@@ -225,6 +323,13 @@ export class ProductStoreService {
       return false;
     }
     this.products.update((items) => items.filter((item) => item.id !== id));
+
+    if (this.http) {
+      this.http.delete<void>(`${environment.apiUrl}/products/${id}`).subscribe({
+        error: (err) => console.error('Failed to delete product on API:', err),
+      });
+    }
+
     return true;
   }
 
@@ -259,6 +364,24 @@ export class ProductStoreService {
         return updated;
       }),
     );
+
+    if (this.http && updated && request.type !== 'SALE') {
+      this.http.post<Product>(`${environment.apiUrl}/stock/adjust`, {
+        productId: request.productId,
+        quantity: request.quantity,
+        type: request.type,
+        note: request.note,
+      }).subscribe({
+        next: (serverProduct) => {
+          this.products.update((items) =>
+            items.map((it) => (it.id === request.productId ? { ...it, stock: serverProduct.stock } : it)),
+          );
+          this.loadMovements();
+        },
+        error: (err) => console.error('Failed to adjust stock on API:', err),
+      });
+    }
+
     return updated;
   }
 

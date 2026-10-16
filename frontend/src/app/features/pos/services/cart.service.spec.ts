@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CartService } from './cart.service';
 import { ProductStoreService } from '../../../core/services/product-store.service';
+import { CategoryStoreService } from '../../../core/services/category-store.service';
 import { Product } from '../../../models/product.model';
 
 describe('CartService', () => {
@@ -36,7 +37,7 @@ describe('CartService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [CartService, ProductStoreService],
+      providers: [CartService, ProductStoreService, CategoryStoreService],
     });
     service = TestBed.inject(CartService);
     productStore = TestBed.inject(ProductStoreService);

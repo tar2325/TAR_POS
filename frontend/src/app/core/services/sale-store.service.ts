@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { DailySalesSummary, ProductSalesSummary, ReportPeriod, SaleItem, SaleOrder } from '../../models/sale.model';
 import { ReceiptData } from '../../models/receipt.model';
 import { ProductStoreService } from './product-store.service';
@@ -10,6 +11,7 @@ const STORAGE_KEY = 'pos_sales_history';
 
 @Injectable({ providedIn: 'root' })
 export class SaleStoreService {
+  private readonly http = inject(HttpClient, { optional: true });
   private readonly productStore = inject(ProductStoreService);
   private readonly categoryStore = inject(CategoryStoreService);
 
@@ -20,6 +22,23 @@ export class SaleStoreService {
   readonly todaySummary = computed<DailySalesSummary>(() => {
     return this.getSummaryByPeriod('today');
   });
+
+  constructor() {
+    this.loadServerOrders();
+  }
+
+  loadServerOrders(): void {
+    if (typeof window === 'undefined' || !this.http) return;
+    this.http.get<SaleOrder[]>(`${environment.apiUrl}/sales`).subscribe({
+      next: (serverOrders) => {
+        if (Array.isArray(serverOrders) && serverOrders.length > 0) {
+          this.orders.set(serverOrders);
+          this.persistOrders(serverOrders);
+        }
+      },
+      error: (err) => console.warn('Failed to load sales from API, using cached data:', err?.message || err),
+    });
+  }
 
   /**
    * Records a sale from POS terminal checkout
@@ -93,6 +112,27 @@ export class SaleStoreService {
       this.persistOrders(updated);
       return updated;
     });
+
+    if (this.http) {
+      this.http.post<SaleOrder>(`${environment.apiUrl}/sales`, {
+        receiptNo: receipt.receiptNo,
+        cashierName: newOrder.cashierName,
+        paymentMethod: 'CASH',
+        discount: newOrder.discount,
+        tax: newOrder.tax,
+        items: receipt.items.map((it) => ({
+          productId: it.product.id,
+          quantity: it.quantity,
+          price: it.product.price,
+        })),
+      }).subscribe({
+        next: () => {
+          this.productStore.loadProducts();
+          this.productStore.loadMovements();
+        },
+        error: (err) => console.error('Failed to sync sale to API:', err),
+      });
+    }
 
     return newOrder;
   }

@@ -46,6 +46,16 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request, auth.getName()));
     }
 
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Bulk import multiple products at once")
+    public com.pos.backend.dto.ProductDtos.BulkImportResponse bulkCreate(
+            @RequestBody com.pos.backend.dto.ProductDtos.BulkImportRequest request,
+            Authentication auth
+    ) {
+        return productService.bulkCreate(request, auth.getName());
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {

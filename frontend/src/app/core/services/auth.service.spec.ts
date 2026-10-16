@@ -1,14 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AuthService } from './auth.service';
 import { AUTH_STORAGE_KEY } from '../constants/auth.constants';
-import { LoginResponse } from '../../models/auth.model';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let httpMock: HttpTestingController;
+  let router: Router;
 
   beforeEach(() => {
     localStorage.clear();
@@ -16,19 +15,21 @@ describe('AuthService', () => {
     TestBed.configureTestingModule({
       providers: [
         AuthService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([
+          { path: 'login', children: [] },
+          { path: 'dashboard', children: [] },
+        ]),
       ],
     });
 
     service = TestBed.inject(AuthService);
-    httpMock = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   afterEach(() => {
-    httpMock.verify();
     localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it('should be created and start unauthenticated', () => {
@@ -38,63 +39,48 @@ describe('AuthService', () => {
     expect(service.accessToken()).toBeNull();
   });
 
-  it('should persist session, set isAuthenticated to true, and save to localStorage on successful mock login', (done) => {
-    service.login({ username: 'admin', password: 'password123' }).subscribe({
-      next: (res) => {
-        expect(res).toBeTruthy();
-        expect(service.isAuthenticated()).toBe(true);
-        expect(service.currentUser()?.username).toBe('admin');
-        expect(service.currentUser()?.role).toBe('ADMIN');
-        expect(service.accessToken()).toBeTruthy();
+  it('should persist session, set isAuthenticated to true, and save to localStorage on successful mock login', async () => {
+    const res = await firstValueFrom(service.login({ username: 'admin', password: 'admin123' }));
+    expect(res).toBeTruthy();
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.currentUser()?.username).toBe('admin');
+    expect(service.currentUser()?.role).toBe('ADMIN');
+    expect(service.accessToken()).toBeTruthy();
 
-        // Check localStorage
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-        expect(stored).not.toBeNull();
-        const parsed = JSON.parse(stored!);
-        expect(parsed.user.username).toBe('admin');
-        expect(parsed.accessToken).toBeTruthy();
-
-        done();
-      },
-    });
+    // Check localStorage
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.user.username).toBe('admin');
+    expect(parsed.accessToken).toBeTruthy();
   });
 
-  it('should fail login when mock credentials are wrong', (done) => {
-    service.login({ username: 'admin', password: 'wrongpassword' }).subscribe({
-      error: (err) => {
-        expect(err.message).toContain('ไม่ถูกต้อง');
-        expect(service.isAuthenticated()).toBe(false);
-        expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
-        done();
-      },
-    });
+  it('should fail login when mock credentials are wrong', async () => {
+    await expect(
+      firstValueFrom(service.login({ username: 'admin', password: 'wrongpassword' })),
+    ).rejects.toThrow('ไม่ถูกต้อง');
+
+    expect(service.isAuthenticated()).toBe(false);
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
   });
 
-  it('should clear session and localStorage on logout', (done) => {
-    service.login({ username: 'admin', password: 'password123' }).subscribe({
-      next: () => {
-        expect(service.isAuthenticated()).toBe(true);
+  it('should clear session and localStorage on logout and navigate to login', async () => {
+    await firstValueFrom(service.login({ username: 'admin', password: 'admin123' }));
+    expect(service.isAuthenticated()).toBe(true);
 
-        service.logout();
+    service.logout();
 
-        expect(service.isAuthenticated()).toBe(false);
-        expect(service.currentUser()).toBeNull();
-        expect(service.accessToken()).toBeNull();
-        expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
-
-        done();
-      },
-    });
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.currentUser()).toBeNull();
+    expect(service.accessToken()).toBeNull();
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('should check roles correctly with hasRole', (done) => {
-    service.login({ username: 'admin', password: 'password123' }).subscribe({
-      next: () => {
-        expect(service.hasRole(['ADMIN'])).toBe(true);
-        expect(service.hasRole(['ADMIN', 'MANAGER'])).toBe(true);
-        expect(service.hasRole(['CASHIER'])).toBe(false);
-        done();
-      },
-    });
+  it('should check roles correctly with hasRole', async () => {
+    await firstValueFrom(service.login({ username: 'admin', password: 'admin123' }));
+    expect(service.hasRole(['ADMIN'])).toBe(true);
+    expect(service.hasRole(['ADMIN', 'MANAGER'])).toBe(true);
+    expect(service.hasRole(['CASHIER'])).toBe(false);
   });
 });

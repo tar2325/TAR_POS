@@ -26,6 +26,8 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final StockService stockService;
+    private final com.pos.backend.repository.SaleOrderRepository saleOrderRepository;
+    private final com.pos.backend.service.SaleService saleService;
     private final PasswordEncoder encoder;
 
     @Override
@@ -33,6 +35,9 @@ public class DataInitializer implements CommandLineRunner {
         seedUsers();
         if (categoryRepository.count() == 0) {
             seedCatalog();
+        }
+        if (saleOrderRepository.count() == 0) {
+            seedSales();
         }
     }
 
@@ -86,6 +91,50 @@ public class DataInitializer implements CommandLineRunner {
                 .category(category).minStock(minStock).build());
         if (stock > 0) {
             stockService.apply(p.getId(), stock, StockMovementType.RECEIVE, "สต็อกเริ่มต้น", "system");
+        }
+    }
+
+    private void seedSales() {
+        try {
+            var p1 = productRepository.findBySkuIgnoreCase("P001").orElse(null);
+            var p2 = productRepository.findBySkuIgnoreCase("P002").orElse(null);
+            var p4 = productRepository.findBySkuIgnoreCase("P004").orElse(null);
+            var p6 = productRepository.findBySkuIgnoreCase("P006").orElse(null);
+
+            if (p1 != null && p2 != null) {
+                saleService.checkout(new com.pos.backend.dto.SaleDtos.CreateSaleRequest(
+                        "RCP-DEMO-001",
+                        "สมชาย (แคชเชียร์)",
+                        "CASH",
+                        BigDecimal.valueOf(100),
+                        BigDecimal.valueOf(55),
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        List.of(
+                                new com.pos.backend.dto.SaleDtos.CreateSaleItemRequest(p1.getId(), 2, null),
+                                new com.pos.backend.dto.SaleDtos.CreateSaleItemRequest(p2.getId(), 1, null)
+                        )
+                ), "cashier");
+            }
+
+            if (p4 != null && p6 != null) {
+                saleService.checkout(new com.pos.backend.dto.SaleDtos.CreateSaleRequest(
+                        "RCP-DEMO-002",
+                        "สมหญิง (แคชเชียร์)",
+                        "QR",
+                        BigDecimal.valueOf(45),
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        List.of(
+                                new com.pos.backend.dto.SaleDtos.CreateSaleItemRequest(p4.getId(), 2, null),
+                                new com.pos.backend.dto.SaleDtos.CreateSaleItemRequest(p6.getId(), 1, null)
+                        )
+                ), "cashier");
+            }
+            log.info("Seeded initial demo sales orders.");
+        } catch (Exception e) {
+            log.warn("Failed to seed demo sales orders: {}", e.getMessage());
         }
     }
 }
