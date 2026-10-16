@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -70,6 +70,22 @@ export class ProductFormComponent implements OnInit {
     active: [true],
   });
 
+  private formInitialized = false;
+
+  constructor() {
+    effect(() => {
+      const id = this.productId();
+      if (!id || this.formInitialized) {
+        return;
+      }
+      const product = this.store.findById(id);
+      if (product) {
+        this.populateForm(product);
+        this.formInitialized = true;
+      }
+    });
+  }
+
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!id) {
@@ -80,15 +96,40 @@ export class ProductFormComponent implements OnInit {
     this.productId.set(id);
     this.autoBarcode.set(false);
     const product = this.store.findById(id);
-    if (!product) {
-      this.router.navigate(['/products']);
-      return;
+    if (product) {
+      this.populateForm(product);
+      this.formInitialized = true;
     }
-    this.form.patchValue(product);
+  }
+
+  private populateForm(product: {
+    sku?: string | null;
+    barcode?: string | null;
+    name?: string | null;
+    categoryId?: number | null;
+    imageUrl?: string | null;
+    price?: number | null;
+    costPrice?: number | null;
+    stock?: number | null;
+    minStock?: number | null;
+    active?: boolean | null;
+  }): void {
+    this.form.patchValue({
+      sku: product.sku ?? '',
+      barcode: product.barcode ?? '',
+      name: product.name ?? '',
+      categoryId: product.categoryId ?? 0,
+      imageUrl: product.imageUrl ?? '',
+      price: product.price ?? 0,
+      costPrice: product.costPrice ?? 0,
+      stock: product.stock ?? 0,
+      minStock: product.minStock ?? 10,
+      active: product.active ?? true,
+    });
   }
 
   searchBarcodeOnline(codeOverride?: string, refresh = false): void {
-    const code = (codeOverride ?? this.lookupCode()).trim();
+    const code = (codeOverride ?? this.lookupCode() ?? '').trim();
     if (!code || code.length < 8) {
       return;
     }
@@ -116,8 +157,8 @@ export class ProductFormComponent implements OnInit {
 
     this.autoBarcode.set(false);
     this.form.patchValue({
-      barcode: suggestion.barcode,
-      name: suggestion.name,
+      barcode: suggestion.barcode ?? '',
+      name: suggestion.name ?? '',
       imageUrl: suggestion.imageUrl || this.form.value.imageUrl || '',
     });
 
@@ -139,7 +180,7 @@ export class ProductFormComponent implements OnInit {
   }
 
   regenerateBarcode(): void {
-    const sku = this.form.controls.sku.value.trim();
+    const sku = (this.form.controls.sku.value ?? '').trim();
     if (!sku) {
       return;
     }
@@ -162,10 +203,17 @@ export class ProductFormComponent implements OnInit {
     }
 
     const raw = this.form.getRawValue();
+    const barcodeVal = (raw.barcode ?? '').trim();
+    const imageUrlVal = (raw.imageUrl ?? '').trim();
+    const skuVal = (raw.sku ?? '').trim();
+    const nameVal = (raw.name ?? '').trim();
+
     const payload = {
       ...raw,
-      barcode: this.autoBarcode() ? '' : raw.barcode.trim(),
-      imageUrl: raw.imageUrl.trim() || undefined,
+      sku: skuVal,
+      name: nameVal,
+      barcode: this.autoBarcode() ? '' : barcodeVal,
+      imageUrl: imageUrlVal || undefined,
     };
 
     try {
