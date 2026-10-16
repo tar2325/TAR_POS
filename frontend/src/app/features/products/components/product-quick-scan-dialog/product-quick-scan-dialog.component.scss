@@ -1,0 +1,522 @@
+@use 'styles/tokens' as *;
+
+.quick-scan-dialog {
+  display: flex;
+  flex-direction: column;
+  padding: $space-lg;
+  max-width: 680px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $space-md;
+
+  .dialog-title-group {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+
+    .header-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+
+      &--create {
+        color: $color-primary;
+      }
+
+      &--restock {
+        color: #0284c7;
+      }
+
+      &--idle {
+        color: $color-text-muted;
+      }
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: $color-text;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: $color-text-muted;
+    }
+  }
+
+  .btn-close {
+    color: $color-text-muted;
+  }
+}
+
+.barcode-search-box {
+  display: flex;
+  align-items: center;
+  gap: $space-xs;
+  background: $color-bg;
+  border: 2px solid $color-border;
+  border-radius: $radius-md;
+  padding: 4px $space-sm;
+  margin-bottom: $space-md;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: $color-primary;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.15);
+  }
+
+  .search-icon {
+    color: $color-primary;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .barcode-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: monospace, inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: $color-text;
+    padding: $space-xs;
+
+    &::placeholder {
+      font-family: inherit;
+      font-weight: normal;
+      color: $color-text-muted;
+    }
+  }
+
+  .btn-scan-submit {
+    border-radius: $radius-sm;
+    font-weight: 600;
+  }
+}
+
+.dialog-content {
+  padding: 0 !important;
+  margin: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+// 1. Idle State
+.idle-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: $space-xl $space-md;
+
+  .idle-illustration {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba($color-primary, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: $space-md;
+
+    .scanner-anim {
+      font-size: 42px;
+      width: 42px;
+      height: 42px;
+      color: $color-primary;
+    }
+  }
+
+  h3 {
+    margin: 0 0 $space-xs 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-text;
+  }
+
+  p {
+    margin: 0 0 $space-lg 0;
+    font-size: 14px;
+    color: $color-text-muted;
+  }
+
+  .feature-hints {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+    width: 100%;
+    max-width: 460px;
+    text-align: left;
+
+    .hint-card {
+      display: flex;
+      align-items: flex-start;
+      gap: $space-md;
+      background: $color-surface;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      padding: $space-sm $space-md;
+
+      .hint-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+        margin-top: 2px;
+
+        &--new { color: $color-primary; }
+        &--restock { color: #0284c7; }
+      }
+
+      .hint-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+
+        strong { color: $color-text; }
+        span { color: $color-text-muted; }
+      }
+    }
+  }
+}
+
+// 2. Create Mode
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+
+  .lookup-banner {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding: $space-sm $space-md;
+    border-radius: $radius-sm;
+    font-size: 13px;
+
+    &--loading {
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+    }
+
+    &--success {
+      background: rgba(#16a34a, 0.1);
+      color: #16a34a;
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    }
+
+    .mini-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid $color-primary;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+
+  .fields-grid {
+    display: flex;
+    gap: $space-lg;
+
+    .preview-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: $space-xs;
+      width: 120px;
+      flex-shrink: 0;
+
+      .image-box {
+        width: 120px;
+        height: 120px;
+        border-radius: $radius-md;
+        border: 1px solid $color-border;
+        background: $color-bg;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .preview-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .no-img {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          color: $color-text-muted;
+          font-size: 11px;
+          mat-icon { font-size: 28px; width: 28px; height: 28px; }
+        }
+      }
+
+      .barcode-pill {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-family: monospace;
+        font-size: 11px;
+        color: $color-text-muted;
+        background: $color-bg;
+        padding: 2px 6px;
+        border-radius: 4px;
+        mat-icon { font-size: 14px; width: 14px; height: 14px; }
+      }
+    }
+
+    .inputs-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: $space-xs;
+
+      .full-width {
+        width: 100%;
+      }
+
+      .row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: $space-md;
+      }
+    }
+  }
+}
+
+// 3. Restock Mode
+.restock-container {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+
+  .existing-card {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-md;
+
+    &__img {
+      width: 72px;
+      height: 72px;
+      border-radius: $radius-sm;
+      object-fit: cover;
+      background: $color-bg;
+      flex-shrink: 0;
+    }
+
+    &__info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    &__cat {
+      font-size: 11px;
+      font-weight: 700;
+      color: $color-primary;
+      text-transform: uppercase;
+    }
+
+    &__name {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: $color-text;
+    }
+
+    &__meta {
+      font-size: 12px;
+      color: $color-text-muted;
+      display: flex;
+      gap: $space-xs;
+    }
+
+    &__stock-row {
+      display: flex;
+      align-items: center;
+      gap: $space-md;
+      margin-top: 4px;
+
+      .stock-badge {
+        font-size: 12px;
+        background: rgba($color-primary, 0.12);
+        color: $color-primary;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      .price-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: $color-text;
+      }
+    }
+  }
+
+  .restock-action-box {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+    background: rgba($color-primary, 0.04);
+    border: 1px solid rgba($color-primary, 0.2);
+    border-radius: $radius-md;
+    padding: $space-md;
+
+    .restock-label {
+      display: flex;
+      align-items: center;
+      gap: $space-xs;
+      font-size: 14px;
+      font-weight: 700;
+      color: $color-text;
+
+      mat-icon {
+        color: $color-primary;
+      }
+    }
+
+    .qty-input-row {
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+
+      .btn-stepper {
+        min-width: 48px;
+        height: 48px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .restock-qty-input {
+        flex: 1;
+        height: 48px;
+        border: 2px solid $color-primary;
+        border-radius: $radius-md;
+        font-size: 24px;
+        font-weight: 800;
+        text-align: center;
+        color: $color-text;
+        outline: none;
+
+        &:focus {
+          box-shadow: 0 0 0 3px rgba($color-primary, 0.25);
+        }
+      }
+    }
+
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $space-xs;
+
+      .chip {
+        padding: 6px 12px;
+        border: 1px solid $color-border;
+        background: $color-surface;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: $color-text;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover {
+          border-color: $color-primary;
+          color: $color-primary;
+          background: rgba($color-primary, 0.05);
+        }
+
+        &--popular {
+          background: $color-primary;
+          color: #fff;
+          border-color: $color-primary;
+
+          &:hover {
+            background: darken(#16a34a, 5%);
+            color: #fff;
+          }
+        }
+      }
+    }
+
+    .price-update-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: $space-md;
+      margin-top: $space-xs;
+    }
+  }
+}
+
+// Dialog Actions Footer
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-sm;
+  margin-top: $space-lg;
+  padding-top: $space-md;
+  border-top: 1px solid $color-border;
+
+  .btn-primary-action {
+    font-weight: 700;
+    padding-inline: $space-lg;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .quick-scan-dialog {
+    padding: $space-md;
+  }
+
+  .form-container .fields-grid {
+    flex-direction: column;
+    align-items: center;
+
+    .preview-column {
+      width: 100%;
+    }
+
+    .inputs-column .row-2 {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+
+  .restock-container .restock-action-box .price-update-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

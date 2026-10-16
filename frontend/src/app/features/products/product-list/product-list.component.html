@@ -1,26 +1,101 @@
 <app-page-header title="จัดการสินค้า" [breadcrumbs]="breadcrumbs" />
+
 <div class="page-content">
+  <!-- Smart Barcode Scanner Bar (Quick Add & Restock) -->
+  @if (canEdit()) {
+    <div class="scanner-panel">
+      <div class="scanner-panel__header">
+        <div class="scanner-label">
+          <mat-icon class="scanner-icon">barcode_scanner</mat-icon>
+          <div class="scanner-title-group">
+            <strong>ยิงบาร์โค้ดนำเข้า / รับสต็อกด่วน</strong>
+            <span class="scanner-subtitle">
+              ยิงจากปืนสแกนเนอร์ได้ทันที หรือกด <kbd>F2</kbd> (สินค้าใหม่ ➔ เด้งดึงข้อมูลอัตโนมัติ / สินค้าเดิม ➔ รับสต็อกเพิ่ม)
+            </span>
+          </div>
+        </div>
+
+        <div class="scanner-options">
+          <mat-slide-toggle
+            color="primary"
+            [checked]="fastRestockMode()"
+            (change)="fastRestockMode.set($event.checked)"
+          >
+            โหมดยิงรับสต็อกไว (+1 อัตโนมัติ)
+          </mat-slide-toggle>
+        </div>
+      </div>
+
+      <div class="scanner-bar">
+        <div class="scanner-input-wrap">
+          <mat-icon class="input-icon">qr_code_scanner</mat-icon>
+          <input
+            #scannerInput
+            type="text"
+            class="scanner-input"
+            placeholder="ยิงบาร์โค้ด หรือพิมพ์เลขแล้วกด Enter (เช่น 8851952350161)..."
+            [ngModel]="scanBarcodeInput()"
+            (ngModelChange)="scanBarcodeInput.set($event)"
+            (keydown.enter)="onBarcodeScan()"
+          />
+          @if (scanBarcodeInput()) {
+            <button type="button" class="btn-clear" (click)="scanBarcodeInput.set('')">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          class="btn-scan"
+          [disabled]="!scanBarcodeInput().trim()"
+          (click)="onBarcodeScan()"
+        >
+          <mat-icon>check_circle</mat-icon>
+          <span>ตรวจสอบ</span>
+        </button>
+
+        <button
+          mat-stroked-button
+          type="button"
+          class="btn-open-dialog"
+          (click)="openQuickAddDialog()"
+        >
+          <mat-icon>add_box</mat-icon>
+          <span>เปิดกล่องยิงบาร์โค้ด</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Standard Toolbar (Search & Bulk Import) -->
   <div class="toolbar">
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>ค้นหา</mat-label>
+      <mat-label>ค้นหาตามชื่อ / SKU / บาร์โค้ด</mat-label>
       <mat-icon matPrefix>search</mat-icon>
       <input matInput [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)" />
     </mat-form-field>
+
     @if (canEdit()) {
       <button mat-stroked-button type="button" (click)="openBulkImport()">
         <mat-icon>upload_file</mat-icon>
-        นำเข้าหลายรายการ
+        นำเข้าหลายรายการ (CSV/Text)
       </button>
-      <a mat-flat-button color="primary" routerLink="/products/new">
-        <mat-icon>add</mat-icon> เพิ่มสินค้า
+
+      <a mat-stroked-button routerLink="/products/new">
+        <mat-icon>edit_note</mat-icon> ฟอร์มเพิ่มสินค้าละเอียด
       </a>
     }
   </div>
+
   @if (loading()) {
     <app-loading />
   } @else if (products().length === 0) {
     <app-empty-state icon="inventory_2" title="ไม่พบสินค้า" />
   } @else {
+    <!-- Desktop Table View -->
     <div class="table-wrap">
       <table mat-table [dataSource]="products()">
         <ng-container matColumnDef="image">
@@ -29,11 +104,29 @@
             <img class="product-thumb" [src]="productImage(p)" [alt]="p.name" loading="lazy" />
           </td>
         </ng-container>
-        <ng-container matColumnDef="sku"><th mat-header-cell *matHeaderCellDef>SKU</th><td mat-cell *matCellDef="let p">{{ p.sku }}</td></ng-container>
-        <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>ชื่อ</th><td mat-cell *matCellDef="let p">{{ p.name }}</td></ng-container>
-        <ng-container matColumnDef="category"><th mat-header-cell *matHeaderCellDef>หมวด</th><td mat-cell *matCellDef="let p">{{ categoryName(p.categoryId) }}</td></ng-container>
+
+        <ng-container matColumnDef="sku">
+          <th mat-header-cell *matHeaderCellDef>SKU</th>
+          <td mat-cell *matCellDef="let p">{{ p.sku }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>ชื่อสินค้า</th>
+          <td mat-cell *matCellDef="let p">
+            <div class="name-cell">
+              <strong>{{ p.name }}</strong>
+              <small class="barcode-sub">{{ p.barcode }}</small>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>หมวด</th>
+          <td mat-cell *matCellDef="let p">{{ categoryName(p.categoryId) }}</td>
+        </ng-container>
+
         <ng-container matColumnDef="price">
-          <th mat-header-cell *matHeaderCellDef>ราคา</th>
+          <th mat-header-cell *matHeaderCellDef>ราคาขาย</th>
           <td mat-cell *matCellDef="let p" class="u-text-right">
             @if (p.price > 0) {
               {{ p.price | currency:'THB':'symbol':'1.2-2':'th' }}
@@ -42,16 +135,41 @@
             }
           </td>
         </ng-container>
-        <ng-container matColumnDef="stock"><th mat-header-cell *matHeaderCellDef>สต็อก</th><td mat-cell *matCellDef="let p" class="u-text-right">{{ p.stock }}</td></ng-container>
+
+        <ng-container matColumnDef="stock">
+          <th mat-header-cell *matHeaderCellDef>สต็อก</th>
+          <td mat-cell *matCellDef="let p" class="u-text-right">
+            <span class="stock-pill" [class.stock-pill--low]="p.stock <= (p.minStock ?? 10)">
+              {{ p.stock }}
+            </span>
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>จัดการ</th>
           <td mat-cell *matCellDef="let p">
             @if (canEdit()) {
-              <a mat-icon-button [routerLink]="['/products', p.id, 'edit']"><mat-icon>edit</mat-icon></a>
-              <button mat-icon-button color="warn" type="button" (click)="deleteProduct(p)"><mat-icon>delete</mat-icon></button>
+              <div class="row-actions">
+                <button
+                  mat-icon-button
+                  color="primary"
+                  type="button"
+                  matTooltip="รับสต็อกเพิ่ม / ปรับราคาด่วน"
+                  (click)="openQuickRestock(p)"
+                >
+                  <mat-icon>add_box</mat-icon>
+                </button>
+                <a mat-icon-button [routerLink]="['/products', p.id, 'edit']" matTooltip="แก้ไขรายละเอียดเต็ม">
+                  <mat-icon>edit</mat-icon>
+                </a>
+                <button mat-icon-button color="warn" type="button" matTooltip="ลบสินค้า" (click)="deleteProduct(p)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             }
           </td>
         </ng-container>
+
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       </table>
@@ -78,13 +196,16 @@
                   <span class="price-pending">ยังไม่ตั้งราคา</span>
                 }
               </span>
-              <span class="mobile-card__stock" [class.mobile-card__stock--low]="p.stock <= 10">
+              <span class="mobile-card__stock" [class.mobile-card__stock--low]="p.stock <= (p.minStock ?? 10)">
                 คงเหลือ {{ p.stock }}
               </span>
             </div>
           </div>
           @if (canEdit()) {
             <div class="mobile-card__actions">
+              <button mat-icon-button color="primary" type="button" (click)="openQuickRestock(p)">
+                <mat-icon>add_box</mat-icon>
+              </button>
               <a mat-icon-button [routerLink]="['/products', p.id, 'edit']">
                 <mat-icon>edit</mat-icon>
               </a>

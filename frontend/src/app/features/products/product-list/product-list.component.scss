@@ -1,5 +1,155 @@
 @use 'styles/tokens' as *;
 
+// Smart Barcode Scanner Panel
+.scanner-panel {
+  background: linear-gradient(135deg, rgba($color-primary, 0.08) 0%, rgba(#0284c7, 0.05) 100%);
+  border: 1.5px solid rgba($color-primary, 0.25);
+  border-radius: $radius-lg;
+  padding: $space-md $space-lg;
+  margin-bottom: $space-md;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-sm;
+    margin-bottom: $space-sm;
+
+    .scanner-label {
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+
+      .scanner-icon {
+        color: $color-primary;
+        font-size: 26px;
+        width: 26px;
+        height: 26px;
+      }
+
+      .scanner-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        strong {
+          font-size: 15px;
+          color: $color-text;
+        }
+
+        .scanner-subtitle {
+          font-size: 12px;
+          color: $color-text-muted;
+
+          kbd {
+            background: $color-surface;
+            border: 1px solid $color-border;
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            color: $color-primary;
+          }
+        }
+      }
+    }
+
+    .scanner-options {
+      mat-slide-toggle {
+        font-size: 13px;
+        font-weight: 600;
+        color: $color-text;
+      }
+    }
+  }
+
+  .scanner-bar {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex-wrap: wrap;
+
+    .scanner-input-wrap {
+      flex: 1;
+      min-width: 260px;
+      display: flex;
+      align-items: center;
+      background: $color-surface;
+      border: 2px solid $color-primary;
+      border-radius: $radius-md;
+      padding: 6px $space-md;
+      gap: $space-xs;
+      transition: box-shadow 0.2s;
+
+      &:focus-within {
+        box-shadow: 0 0 0 3px rgba($color-primary, 0.2);
+      }
+
+      .input-icon {
+        color: $color-primary;
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+      }
+
+      .scanner-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 15px;
+        font-weight: 600;
+        color: $color-text;
+        font-family: monospace, inherit;
+
+        &::placeholder {
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: normal;
+          color: $color-text-muted;
+        }
+      }
+
+      .btn-clear {
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        color: $color-text-muted;
+        display: flex;
+        align-items: center;
+
+        &:hover {
+          color: $color-text;
+        }
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+
+    .btn-scan {
+      font-weight: 700;
+      height: 44px;
+      border-radius: $radius-md;
+      padding-inline: $space-md;
+    }
+
+    .btn-open-dialog {
+      height: 44px;
+      border-radius: $radius-md;
+      font-weight: 600;
+      background: $color-surface;
+    }
+  }
+}
+
 .toolbar {
   display: flex;
   gap: $space-md;
@@ -41,12 +191,68 @@
   background: $color-bg;
 }
 
+.name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    color: $color-text;
+    font-size: 14px;
+  }
+
+  .barcode-sub {
+    font-family: monospace;
+    font-size: 11px;
+    color: $color-text-muted;
+  }
+}
+
+.stock-pill {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba($color-primary, 0.12);
+  color: $color-primary;
+
+  &--low {
+    background: rgba($color-warning, 0.15);
+    color: $color-warning;
+  }
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 // Hidden by default on desktop
 .mobile-card-list {
   display: none;
 }
 
 @media (max-width: 640px) {
+  .scanner-panel {
+    padding: $space-sm;
+
+    .scanner-bar {
+      flex-direction: column;
+      align-items: stretch;
+
+      .scanner-input-wrap {
+        min-width: auto;
+      }
+
+      .btn-scan, .btn-open-dialog {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+
   .toolbar {
     gap: $space-sm;
     margin-bottom: $space-md;

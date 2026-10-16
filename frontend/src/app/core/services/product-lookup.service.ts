@@ -5,10 +5,11 @@ import { environment } from '../../../environments/environment';
 import { BackendLookupResponse } from '../../models/product-lookup.model';
 import { CategoryStoreService } from './category-store.service';
 import { resolveCategoryIdFromHints } from '../utils/category-mapper.util';
+import { findThaiBarcodeProduct } from '../data/thai-product-barcode.data';
 
 @Injectable({ providedIn: 'root' })
 export class ProductLookupService {
-  private readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient, { optional: true });
   private readonly categoryStore = inject(CategoryStoreService);
 
   lookupByBarcode(barcode: string, refresh = false): Observable<BackendLookupResponse> {
@@ -22,28 +23,65 @@ export class ProductLookupService {
       });
     }
 
+    if (!this.http) {
+      return of(this.resolveLocalOrNotFound(clean));
+    }
+
     const url = `${environment.apiUrl}/lookup/barcode/${clean}${refresh ? '?refresh=true' : ''}`;
     return this.http.get<BackendLookupResponse>(url).pipe(
       map((res) => {
-        if (res.suggestion && res.suggestion.categoryHint) {
-          const matchedId = resolveCategoryIdFromHints(
-            this.categoryStore.activeCategories(),
-            res.suggestion.categoryHint
-          );
-          if (matchedId) {
-            res.suggestion.categoryId = matchedId;
+        if (res.status === 'FOUND' && res.suggestion) {
+          if (res.suggestion.categoryHint) {
+            const matchedId = resolveCategoryIdFromHints(
+              this.categoryStore.activeCategories(),
+              res.suggestion.categoryHint
+            );
+            if (matchedId) {
+              res.suggestion.categoryId = matchedId;
+            }
           }
+          return res;
         }
-        return res;
+        return this.resolveLocalOrNotFound(clean, res.message);
       }),
       catchError((err) => {
-        return of({
-          status: 'NOT_FOUND',
-          barcode: clean,
-          validChecksum: true,
-          message: err?.error?.message || 'ไม่พบข้อมูลหรือระบบกำลังเชื่อมต่อบริการค้นหา',
-        } as BackendLookupResponse);
+        return of(this.resolveLocalOrNotFound(clean, err?.error?.message));
       })
     );
+  }
+
+  private resolveLocalOrNotFound(clean: string, defaultMessage?: string): BackendLookupResponse {
+    const local = findThaiBarcodeProduct(clean);
+    if (local) {
+      const categoryId = local.categoryHints
+        ? resolveCategoryIdFromHints(this.categoryStore.activeCategories(), local.categoryHints)
+        : undefined;
+
+      return {
+        status: 'FOUND',
+        barcode: clean,
+        originCountry: 'ไทย (GS1 885)',
+        validChecksum: true,
+        message: 'พบข้อมูลสินค้าในฐานข้อมูลไทย',
+        suggestion: {
+          barcode: clean,
+          name: local.nameTh || local.name,
+          brand: local.brand,
+          quantity: local.quantity,
+          imageUrl: local.imageUrl,
+          categoryHint: local.categoryHints,
+          categoryId: categoryId ?? undefined,
+          source: 'THAI_GS1_LOCAL',
+          confidence: 95,
+        },
+      };
+    }
+
+    return {
+      status: 'NOT_FOUND',
+      barcode: clean,
+      validChecksum: true,
+      message: defaultMessage || 'ไม่พบข้อมูลในฐานข้อมูลออนไลน์ (สามารถกรอกชื่อและราคาเองได้ทันที)',
+    };
   }
 }

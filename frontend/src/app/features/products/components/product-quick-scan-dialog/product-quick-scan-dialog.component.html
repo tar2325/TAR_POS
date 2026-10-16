@@ -1,0 +1,346 @@
+<div class="quick-scan-dialog">
+  <!-- Dialog Header -->
+  <div class="dialog-header">
+    <div class="dialog-title-group">
+      @if (mode() === 'create') {
+        <mat-icon class="header-icon header-icon--create">add_circle</mat-icon>
+        <div>
+          <h2>เพิ่มสินค้าใหม่ด้วยบาร์โค้ด</h2>
+          <span class="subtitle">ระบบดึงข้อมูลชื่อและรูปภาพให้อัตโนมัติ</span>
+        </div>
+      } @else if (mode() === 'restock') {
+        <mat-icon class="header-icon header-icon--restock">inventory_2</mat-icon>
+        <div>
+          <h2>รับสต็อกเข้าคลัง & ปรับราคาด่วน</h2>
+          <span class="subtitle">พบสินค้าในระบบแล้ว ระบุจำนวนที่รับเข้าเพิ่ม</span>
+        </div>
+      } @else {
+        <mat-icon class="header-icon header-icon--idle">barcode_scanner</mat-icon>
+        <div>
+          <h2>ยิงบาร์โค้ดนำเข้าสินค้า</h2>
+          <span class="subtitle">สแกนบาร์โค้ดจากปืนยิง หรือพิมพ์เลขรหัสแล้วกด Enter</span>
+        </div>
+      }
+    </div>
+
+    <button mat-icon-button type="button" class="btn-close" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Barcode Scanner Bar (Always visible) -->
+  <div class="barcode-search-box">
+    <mat-icon class="search-icon">barcode_scanner</mat-icon>
+    <input
+      #barcodeInput
+      type="text"
+      class="barcode-input"
+      placeholder="ยิงบาร์โค้ด หรือพิมพ์เลข 8-14 หลัก แล้วกด Enter..."
+      [ngModel]="currentBarcode()"
+      (ngModelChange)="currentBarcode.set($event)"
+      (keydown)="onBarcodeKeydown($event)"
+    />
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      class="btn-scan-submit"
+      [disabled]="!currentBarcode().trim()"
+      (click)="processBarcode(currentBarcode())"
+    >
+      <mat-icon>search</mat-icon> ตรวจสอบ
+    </button>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <!-- 1. IDLE STATE: Waiting for Scan -->
+    @if (mode() === 'idle') {
+      <div class="idle-state">
+        <div class="idle-illustration">
+          <mat-icon class="scanner-anim">qr_code_scanner</mat-icon>
+        </div>
+        <h3>พร้อมรับสัญญาณบาร์โค้ด</h3>
+        <p>ยิงบาร์โค้ดสินค้าได้ทันที</p>
+        <div class="feature-hints">
+          <div class="hint-card">
+            <mat-icon class="hint-icon hint-icon--new">fiber_new</mat-icon>
+            <div class="hint-text">
+              <strong>สินค้าใหม่:</strong>
+              <span>ดึงชื่อ ขนาด รูปภาพจากฐานข้อมูลไทย GS1 & ออนไลน์ให้อัตโนมัติ</span>
+            </div>
+          </div>
+          <div class="hint-card">
+            <mat-icon class="hint-icon hint-icon--restock">add_shopping_cart</mat-icon>
+            <div class="hint-text">
+              <strong>สินค้าเดิม:</strong>
+              <span>เปิดหน้ารับสต็อกเพิ่มทันที กด Enter บันทึกได้ใน 1 วินาที</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 2. CREATE MODE: New Product -->
+    @if (mode() === 'create') {
+      <div class="form-container">
+        <!-- Online Lookup Status Banner -->
+        @if (isLookingUp()) {
+          <div class="lookup-banner lookup-banner--loading">
+            <span class="mini-spinner"></span>
+            <span>กำลังค้นหาชื่อและข้อมูลสินค้าออนไลน์จากบาร์โค้ด {{ currentBarcode() }}...</span>
+          </div>
+        } @else if (lookupInfo()) {
+          <div class="lookup-banner lookup-banner--success">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ lookupInfo() }}</span>
+          </div>
+        }
+
+        <div class="fields-grid">
+          <!-- Thumbnail & Barcode Info -->
+          <div class="preview-column">
+            <div class="image-box">
+              @if (newImageUrl()) {
+                <img [src]="newImageUrl()" alt="Product preview" class="preview-img" />
+              } @else {
+                <div class="no-img">
+                  <mat-icon>photo_camera</mat-icon>
+                  <span>ไม่มีรูปภาพ</span>
+                </div>
+              }
+            </div>
+            <div class="barcode-pill">
+              <mat-icon>qr_code</mat-icon>
+              <span>{{ currentBarcode() }}</span>
+            </div>
+          </div>
+
+          <!-- Product Details Form -->
+          <div class="inputs-column">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>ชื่อสินค้า *</mat-label>
+              <input
+                #createNameInput
+                matInput
+                required
+                placeholder="เช่น นมจืด เมจิ 200ml"
+                [ngModel]="newName()"
+                (ngModelChange)="newName.set($event)"
+                (keydown.enter)="saveCreate(true)"
+              />
+            </mat-form-field>
+
+            <div class="row-2">
+              <mat-form-field appearance="outline">
+                <mat-label>รหัส SKU *</mat-label>
+                <input
+                  matInput
+                  required
+                  [ngModel]="newSku()"
+                  (ngModelChange)="newSku.set($event)"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>หมวดหมู่สินค้า *</mat-label>
+                <mat-select
+                  [ngModel]="newCategoryId()"
+                  (ngModelChange)="newCategoryId.set($event)"
+                >
+                  @for (cat of categories(); track cat.id) {
+                    <mat-option [value]="cat.id">{{ cat.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="row-2">
+              <mat-form-field appearance="outline">
+                <mat-label>ราคาขาย (บาท) *</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  [ngModel]="newPrice()"
+                  (ngModelChange)="newPrice.set($event)"
+                  (keydown.enter)="saveCreate(true)"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>ราคาทุน (บาท)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  [ngModel]="newCostPrice()"
+                  (ngModelChange)="newCostPrice.set($event)"
+                  (keydown.enter)="saveCreate(true)"
+                />
+              </mat-form-field>
+            </div>
+
+            <div class="row-2">
+              <mat-form-field appearance="outline">
+                <mat-label>สต็อกรับเข้าเริ่มต้น (ชิ้น)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [ngModel]="newStock()"
+                  (ngModelChange)="newStock.set($event)"
+                  (keydown.enter)="saveCreate(true)"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>แจ้งเตือนสต็อกต่ำกว่า</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [ngModel]="newMinStock()"
+                  (ngModelChange)="newMinStock.set($event)"
+                />
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 3. RESTOCK MODE: Existing Product -->
+    @if (mode() === 'restock' && existingProduct(); as product) {
+      <div class="restock-container">
+        <!-- Existing Product Card -->
+        <div class="existing-card">
+          <img class="existing-card__img" [src]="productImage(product)" [alt]="product.name" />
+          <div class="existing-card__info">
+            <span class="existing-card__cat">{{ categoryName(product.categoryId) }}</span>
+            <h3 class="existing-card__name">{{ product.name }}</h3>
+            <div class="existing-card__meta">
+              <span>SKU: <strong>{{ product.sku }}</strong></span>
+              <span>•</span>
+              <span>บาร์โค้ด: <strong>{{ product.barcode }}</strong></span>
+            </div>
+            <div class="existing-card__stock-row">
+              <span class="stock-badge">
+                สต็อกปัจจุบัน: <strong>{{ product.stock }}</strong> ชิ้น
+              </span>
+              <span class="price-text">
+                ราคาขาย: {{ product.price | currency:'THB':'symbol':'1.2-2':'th' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Stock Control -->
+        <div class="restock-action-box">
+          <label class="restock-label">
+            <mat-icon>add_box</mat-icon>
+            <span>ระบุจำนวนที่รับเข้าเพิ่ม (+สต็อก):</span>
+          </label>
+
+          <div class="qty-input-row">
+            <button mat-stroked-button type="button" class="btn-stepper" (click)="addQuickQty(-1)">-1</button>
+            <input
+              #restockQtyInput
+              type="number"
+              class="restock-qty-input"
+              min="1"
+              [ngModel]="restockQty()"
+              (ngModelChange)="restockQty.set($event)"
+              (keydown.enter)="saveRestock(true)"
+            />
+            <button mat-stroked-button type="button" class="btn-stepper" (click)="addQuickQty(1)">+1</button>
+          </div>
+
+          <!-- Quick Increment Buttons -->
+          <div class="quick-chips">
+            <button type="button" class="chip" (click)="addQuickQty(6)">+6 ชิ้น</button>
+            <button type="button" class="chip chip--popular" (click)="addQuickQty(12)">+12 (1 โหล)</button>
+            <button type="button" class="chip" (click)="addQuickQty(24)">+24 (ลัง)</button>
+            <button type="button" class="chip" (click)="addQuickQty(50)">+50 ชิ้น</button>
+            <button type="button" class="chip" (click)="addQuickQty(100)">+100 ชิ้น</button>
+          </div>
+
+          <!-- Price & Cost Review (Optional Inline Update) -->
+          <div class="price-update-row">
+            <mat-form-field appearance="outline">
+              <mat-label>ปรับราคาขาย (บาท)</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                step="0.5"
+                [ngModel]="editPrice()"
+                (ngModelChange)="editPrice.set($event)"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>ปรับราคาทุน (บาท)</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                step="0.5"
+                [ngModel]="editCostPrice()"
+                (ngModelChange)="editCostPrice.set($event)"
+              />
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    }
+  </mat-dialog-content>
+
+  <!-- Dialog Footer Actions -->
+  <div class="dialog-actions">
+    <button mat-stroked-button type="button" (click)="close()">ยกเลิก</button>
+
+    @if (mode() === 'create') {
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="!isNameValid()"
+        (click)="saveCreate(false)"
+      >
+        <mat-icon>save</mat-icon> บันทึก & ปิด
+      </button>
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="btn-primary-action"
+        [disabled]="!isNameValid()"
+        (click)="saveCreate(true)"
+      >
+        <mat-icon>playlist_add_check</mat-icon> บันทึก & ยิงชิ้นต่อไป (Enter)
+      </button>
+    }
+
+    @if (mode() === 'restock') {
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="saveRestock(false)"
+      >
+        <mat-icon>save</mat-icon> บันทึกรับสต็อก & ปิด
+      </button>
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="btn-primary-action"
+        (click)="saveRestock(true)"
+      >
+        <mat-icon>done_all</mat-icon> บันทึก & ยิงชิ้นต่อไป (Enter)
+      </button>
+    }
+  </div>
+</div>
